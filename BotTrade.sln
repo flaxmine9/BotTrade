@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31717.71
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BotTrade", "BotTrade\BotTrade.csproj", "{27F41EA1-97F9-45AD-8D41-393C739FC41A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Binance", "Binance", "{F92BA035-1ECE-4222-8FB3-A3F5CFF9B474}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Indicators", "Indicators", "{F8DE471B-7E9C-4A1F-8895-9391E1712E15}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Strategies", "Strategies", "{7C369EB7-D246-4342-B904-1FD693651D6D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Traiding", "Traiding", "{56502D85-EBF2-4935-A622-BAA3BBADECB2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Binance", "Binance\Binance.csproj", "{2D5C082A-27A8-400D-BDDC-1DBAC0674786}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TechnicalIndicator", "TechnicalIndicator\TechnicalIndicator.csproj", "{FEF29697-C220-49ED-A9EF-9BE675B0E452}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strategies", "Strategies\Strategies.csproj", "{8170223E-8B2E-4AE9-BBBD-C4672E1CD957}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeBinance", "TradeBinance\TradeBinance.csproj", "{34BC6725-B02B-4912-83FA-719B7E191D92}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{27F41EA1-97F9-45AD-8D41-393C739FC41A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27F41EA1-97F9-45AD-8D41-393C739FC41A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{27F41EA1-97F9-45AD-8D41-393C739FC41A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27F41EA1-97F9-45AD-8D41-393C739FC41A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D5C082A-27A8-400D-BDDC-1DBAC0674786}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D5C082A-27A8-400D-BDDC-1DBAC0674786}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D5C082A-27A8-400D-BDDC-1DBAC0674786}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D5C082A-27A8-400D-BDDC-1DBAC0674786}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEF29697-C220-49ED-A9EF-9BE675B0E452}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEF29697-C220-49ED-A9EF-9BE675B0E452}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEF29697-C220-49ED-A9EF-9BE675B0E452}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEF29697-C220-49ED-A9EF-9BE675B0E452}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8170223E-8B2E-4AE9-BBBD-C4672E1CD957}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8170223E-8B2E-4AE9-BBBD-C4672E1CD957}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8170223E-8B2E-4AE9-BBBD-C4672E1CD957}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8170223E-8B2E-4AE9-BBBD-C4672E1CD957}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34BC6725-B02B-4912-83FA-719B7E191D92}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34BC6725-B02B-4912-83FA-719B7E191D92}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34BC6725-B02B-4912-83FA-719B7E191D92}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34BC6725-B02B-4912-83FA-719B7E191D92}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2D5C082A-27A8-400D-BDDC-1DBAC0674786} = {F92BA035-1ECE-4222-8FB3-A3F5CFF9B474}
+		{FEF29697-C220-49ED-A9EF-9BE675B0E452} = {F8DE471B-7E9C-4A1F-8895-9391E1712E15}
+		{8170223E-8B2E-4AE9-BBBD-C4672E1CD957} = {7C369EB7-D246-4342-B904-1FD693651D6D}
+		{34BC6725-B02B-4912-83FA-719B7E191D92} = {56502D85-EBF2-4935-A622-BAA3BBADECB2}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {60272E2E-EB78-4BB9-BEEF-34B705A532B3}
+	EndGlobalSection
+EndGlobal

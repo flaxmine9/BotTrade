@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Binance\Binance.csproj" />
+    <ProjectReference Include="..\TechnicalIndicator\TechnicalIndicator.csproj" />
+    <ProjectReference Include="..\TradeBinance\TradeBinance.csproj" />
+  </ItemGroup>
+
+</Project>
