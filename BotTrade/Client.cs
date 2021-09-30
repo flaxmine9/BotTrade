@@ -1,4 +1,5 @@
 ﻿using Strategy.Interfaces;
+using System.Collections.Generic;
 
 namespace FlaxTrade
 {

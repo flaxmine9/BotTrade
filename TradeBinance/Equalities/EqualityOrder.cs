@@ -1,4 +1,5 @@
 ﻿using Binance.Net.Objects.Futures.FuturesData;
+using System.Collections.Generic;
 
 namespace TradeBinance.Equalities
 {

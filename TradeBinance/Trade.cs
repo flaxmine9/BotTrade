@@ -2,6 +2,10 @@
 using Binance.Net.Enums;
 using Binance.Net.Objects.Futures.FuturesData;
 using Binance.Net.Objects.Futures.MarketData;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using TradeBinance.Equalities;
 using TradeBinance.Models;
 

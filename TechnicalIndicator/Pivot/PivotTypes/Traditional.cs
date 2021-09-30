@@ -1,4 +1,6 @@
-﻿namespace TechnicalIndicator.Pivot.PivotTypes
+﻿using System.Collections.Generic;
+
+namespace TechnicalIndicator.Pivot.PivotTypes
 {
     public class Traditional : Pivot, IPivotPoint
     {

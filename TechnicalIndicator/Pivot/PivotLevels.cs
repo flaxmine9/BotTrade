@@ -1,8 +1,10 @@
-﻿namespace TechnicalIndicator.Pivot
+﻿using System.Collections.Generic;
+
+namespace TechnicalIndicator.Pivot
 {
     public class PivotLevels
     {
-        public IEnumerable<decimal>? Resistances { get; set; }
-        public IEnumerable<decimal>? Supports { get; set; }
+        public IEnumerable<decimal> Resistances { get; set; }
+        public IEnumerable<decimal> Supports { get; set; }
     }
 }
