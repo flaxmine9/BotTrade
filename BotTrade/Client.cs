@@ -1,5 +1,6 @@
 ﻿using Strategy.Interfaces;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FlaxTrade
 {
