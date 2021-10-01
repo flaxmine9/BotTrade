@@ -59,86 +59,88 @@ namespace TradeBinance
         {
             Console.WriteLine($"{symbol}: Контролируем ордера");
 
-            IEnumerable<BinanceFuturesOrder> openCurrentOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol);
+            IEnumerable<BinanceFuturesOrder> openCurrentOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false);
 
             if (openCurrentOrders.Any())
             {
                 for (uint i = 0; i < uint.MaxValue; i++)
                 {
-                    IEnumerable<BinanceFuturesOrder> newCurrentOpenOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol);
-
-                    IEnumerable<BinanceFuturesOrder> exceptedOrders = openCurrentOrders.Except<BinanceFuturesOrder>(newCurrentOpenOrders, _equalityOrder);
-
-                    if (exceptedOrders.Any())
+                    IEnumerable<BinanceFuturesOrder> newCurrentOpenOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false);
+                    if (newCurrentOpenOrders.Any())
                     {
-                        #region Выбираем Limit, StopMarket и TakeProfitMarket ордера
+                        IEnumerable<BinanceFuturesOrder> exceptedOrders = openCurrentOrders.Except<BinanceFuturesOrder>(newCurrentOpenOrders, _equalityOrder);
 
-                        IEnumerable<BinanceFuturesOrder> stopMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.StopMarket));
-                        IEnumerable<BinanceFuturesOrder> takeProfitMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.TakeProfitMarket));
-                        IEnumerable<BinanceFuturesOrder> limitOrders = exceptedOrders.Where(x => x.Type.Equals(OrderType.Limit));
-
-                        #endregion
-
-                        #region Проверяем ордера
-
-                        if (stopMarketOrder.Any())
+                        if (exceptedOrders.Any())
                         {
-                            Console.WriteLine($"{symbol}: StopMarket Order выполнился");
-                            Console.WriteLine($"{symbol}: Отменяем все оставшиеся ордера");
+                            #region Выбираем Limit, StopMarket и TakeProfitMarket ордера
 
-                            bool canceledOpenOrders = await _binanceInteraction.CancelOpenOrders(stopMarketOrder.First().Symbol);
-                            if (canceledOpenOrders)
+                            IEnumerable<BinanceFuturesOrder> stopMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.StopMarket));
+                            IEnumerable<BinanceFuturesOrder> takeProfitMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.TakeProfitMarket));
+                            IEnumerable<BinanceFuturesOrder> limitOrders = exceptedOrders.Where(x => x.Type.Equals(OrderType.Limit));
+
+                            #endregion
+
+                            #region Проверяем ордера
+
+                            if (stopMarketOrder.Any())
                             {
-                                Console.WriteLine($"{symbol}: Отменили все оставшиеся ордера");
-                                break;
-                            }
-                            else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {stopMarketOrder.First().Symbol}"); continue; }
+                                Console.WriteLine($"{symbol}: StopMarket Order выполнился");
+                                Console.WriteLine($"{symbol}: Отменяем все оставшиеся ордера");
 
-                        }
-                        else if (takeProfitMarketOrder.Any())
-                        {
-                            Console.WriteLine($"{symbol}: ProfitMarket Order выполнился");
-                            Console.WriteLine($"{symbol}: Отменяем все оставшиеся ордера");
-
-                            bool canceledTakeProfit = await _binanceInteraction.CancelOpenOrders(takeProfitMarketOrder.First().Symbol);
-                            if (canceledTakeProfit)
-                            {
-                                Console.WriteLine($"{symbol}: Отменили все оставшиеся ордера");
-                                break;
-                            }
-                            else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {takeProfitMarketOrder.First().Symbol}"); continue; }
-                        }
-                        else if (limitOrders.Any())
-                        {
-                            string symbolLimit = limitOrders.First().Symbol;
-                            decimal priceLimit = limitOrders.First().Quantity > 0 ? limitOrders.Max(p => p.Price) : limitOrders.Min(p => p.Price);
-
-                            var currentStopMarket = newCurrentOpenOrders.Where(x => x.Type.Equals(OrderType.StopMarket) && x.Symbol.Equals(symbolLimit));
-
-                            if (newCurrentOpenOrders.Any())
-                            {
-                                var cancelStopMarket = await _binanceInteraction.CancelOrder(currentStopMarket.First());
-                                if (cancelStopMarket)
+                                bool canceledOpenOrders = await _binanceInteraction.CancelOpenOrders(stopMarketOrder.First().Symbol).ConfigureAwait(false);
+                                if (canceledOpenOrders)
                                 {
-                                    Console.WriteLine($"{symbol}: Отменяем StopMarket по цене {currentStopMarket.First().StopPrice} $");
-                                    // Replace StopMarket Order
+                                    Console.WriteLine($"{symbol}: Отменили все оставшиеся ордера");
+                                    break;
+                                }
+                                else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {stopMarketOrder.First().Symbol}"); continue; }
 
-                                    var replaceStopMarketOrder = await _binanceInteraction.ReplaceStopMarketOrderAsync(currentStopMarket.First(), priceLimit, _tradeSetting.StopLoss);
+                            }
+                            else if (takeProfitMarketOrder.Any())
+                            {
+                                Console.WriteLine($"{symbol}: ProfitMarket Order выполнился");
+                                Console.WriteLine($"{symbol}: Отменяем все оставшиеся ордера");
 
-                                    if (replaceStopMarketOrder != null)
+                                bool canceledTakeProfit = await _binanceInteraction.CancelOpenOrders(takeProfitMarketOrder.First().Symbol).ConfigureAwait(false);
+                                if (canceledTakeProfit)
+                                {
+                                    Console.WriteLine($"{symbol}: Отменили все оставшиеся ордера");
+                                    break;
+                                }
+                                else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {takeProfitMarketOrder.First().Symbol}"); continue; }
+                            }
+                            else if (limitOrders.Any())
+                            {
+                                string symbolLimit = limitOrders.First().Symbol;
+                                decimal priceLimit = limitOrders.First().Quantity > 0 ? limitOrders.Max(p => p.Price) : limitOrders.Min(p => p.Price);
+
+                                var currentStopMarket = newCurrentOpenOrders.Where(x => x.Type.Equals(OrderType.StopMarket) && x.Symbol.Equals(symbolLimit));
+
+                                if (newCurrentOpenOrders.Any())
+                                {
+                                    var cancelStopMarket = await _binanceInteraction.CancelOrder(currentStopMarket.First()).ConfigureAwait(false);
+                                    if (cancelStopMarket)
                                     {
-                                        Console.WriteLine($"{symbol}: Переставляем StopMarket по новой цене {replaceStopMarketOrder.StopPrice} $");
+                                        Console.WriteLine($"{symbol}: Отменяем StopMarket по цене {currentStopMarket.First().StopPrice} $");
+                                        // Replace StopMarket Order
+
+                                        var replaceStopMarketOrder = await _binanceInteraction.ReplaceStopMarketOrderAsync(currentStopMarket.First(), priceLimit, _tradeSetting.StopLoss).ConfigureAwait(false);
+
+                                        if (replaceStopMarketOrder != null)
+                                        {
+                                            Console.WriteLine($"{symbol}: Переставляем StopMarket по новой цене {replaceStopMarketOrder.StopPrice} $");
+                                        }
                                     }
                                 }
                             }
+
+                            openCurrentOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false);
+
+                            #endregion
                         }
 
-                        openCurrentOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol);
-
-                        #endregion
                     }
-
-                    await Task.Delay(500);
+                    await Task.Delay(1000);
                 }
             }
         }
