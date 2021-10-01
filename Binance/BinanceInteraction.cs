@@ -15,21 +15,21 @@ namespace Binance
     public class BinanceInteraction
     {
         private BinanceClient _binanceClient { get; set; }
-        public BinanceFuturesUsdtExchangeInfo? _exchangeInfo { get; set; }
+        public BinanceFuturesUsdtExchangeInfo _exchangeInfo { get; set; }
 
         public BinanceInteraction(string key, string secretKey)
         {
-            _binanceClient = new BinanceClient(new BinanceClientOptions()
-            {
-                ApiCredentials = new ApiCredentials(key, secretKey)
-            });
-
-            #region TestNet Binance
-
-            //_binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            //_binanceClient = new BinanceClient(new BinanceClientOptions()
             //{
             //    ApiCredentials = new ApiCredentials(key, secretKey)
             //});
+
+            #region TestNet Binance
+
+            _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            {
+                ApiCredentials = new ApiCredentials(key, secretKey)
+            });
 
             #endregion
         }
@@ -52,7 +52,7 @@ namespace Binance
                 for (int i = 0; i < 500000; i++)
                 {
                     var gg = quantity * position.EntryPrice;
-                    if (gg <= 5.5m)
+                    if (gg <= 10.5m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -65,7 +65,7 @@ namespace Binance
 
                 for (int i = 0; i < 500000; i++)
                 {
-                    if (quantity * priceTakeProfit <= 5.5m)
+                    if (quantity * priceTakeProfit <= 10.5m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
