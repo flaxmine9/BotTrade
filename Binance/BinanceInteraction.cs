@@ -52,7 +52,7 @@ namespace Binance
                 for (int i = 0; i < 500000; i++)
                 {
                     var gg = quantity * position.EntryPrice;
-                    if (gg <= 10.5m)
+                    if (gg <= 5.1m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -65,11 +65,29 @@ namespace Binance
 
                 for (int i = 0; i < 500000; i++)
                 {
-                    if (quantity * priceTakeProfit <= 10.5m)
+                    if (quantity * priceTakeProfit <= 5.1m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
                     else { break; }
+                }
+            }
+
+            var quantityOrders = Math.Abs(position.Quantity) / quantity;
+            quantityOrders -= (int)quantityOrders % 0.1m;
+
+            if (quantityOrders > 15)
+            {
+                for (int i = 15; i > 2; i--)
+                {
+                    if (quantityOrders > i && (takeProfit - 1.0m) / i > 0.0002m)
+                    {
+                        var quantityRazdelNa15Order = Math.Abs(position.Quantity) / i;
+                        quantityRazdelNa15Order -= quantityRazdelNa15Order % echange.LotSizeFilter.MinQuantity;
+
+                        quantity = quantityRazdelNa15Order;
+                        break;
+                    }
                 }
             }
 
@@ -337,5 +355,15 @@ namespace Binance
             return klines;
         }
 
+        public async Task<IEnumerable<IBinanceKline>> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
+        {
+            var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
+            if (klines.Success)
+            {
+                return klines.Data;
+            }
+
+            return new List<IBinanceKline>();
+        }
     }
 }
