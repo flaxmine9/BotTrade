@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TechnicalIndicator.Models;
 
 namespace Binance
 {
@@ -355,15 +356,22 @@ namespace Binance
             return klines;
         }
 
-        public async Task<IEnumerable<IBinanceKline>> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
+        public async Task<IEnumerable<Kline>> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
         {
             var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
             if (klines.Success)
             {
-                return klines.Data;
+                return klines.Data.Select(x=> new Kline()
+                {
+                    Symbol = symbol,
+                    Open = x.Open,
+                    Low= x.Low,
+                    High= x.High,
+                    Close = x.Close
+                });
             }
 
-            return new List<IBinanceKline>();
+            return new List<Kline>();
         }
     }
 }
