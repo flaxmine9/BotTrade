@@ -1,11 +1,13 @@
 ﻿using Binance;
 using Binance.Net.Enums;
+using Binance.Net.Interfaces;
 using Binance.Net.Objects.Futures.FuturesData;
 using Binance.Net.Objects.Futures.MarketData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TechnicalIndicator.Models;
 using TradeBinance.Equalities;
 using TradeBinance.Models;
 
@@ -140,7 +142,7 @@ namespace TradeBinance
                         }
 
                     }
-                    await Task.Delay(1000);
+                    await Task.Delay(200);
                 }
             }
         }
@@ -156,7 +158,7 @@ namespace TradeBinance
         {
             BinanceFuturesUsdtSymbol symbolInfo = _binanceInteraction.GetInfo(position.Symbol);
 
-            decimal quantitiesAsset = _binanceInteraction.CalculateQuantity(position, takeProfit);
+            decimal quantitiesAsset = _binanceInteraction.CalculateQuantity(position, takeProfit, _tradeSetting.MaxOrders);
             int quantityOrders = _binanceInteraction.CountQuantityOrders(position, quantitiesAsset);
 
             decimal percentBetweenOrders = _binanceInteraction.CountPercenBetweenOrders(takeProfit, quantityOrders);
@@ -212,6 +214,19 @@ namespace TradeBinance
             }
 
             return gridOrder;
+        }
+
+        public async Task<IEnumerable<Kline>> GetKlinesAsync(string symbol, int limit)
+        {
+            var result = await _binanceInteraction.GetKlineAsync(symbol, KlineInterval.FiveMinutes, limit: limit);
+
+            return result.Select(x => new Kline()
+            {
+                Close = x.Close,
+                High = x.High,
+                Low = x.Low,
+                Open = x.Open
+            });
         }
     }
 }
