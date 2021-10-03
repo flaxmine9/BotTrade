@@ -5,7 +5,7 @@ namespace TradeBinance.Equalities
 {
     public class EqualityOrder : IEqualityComparer<BinanceFuturesOrder>
     {
-        public bool Equals(BinanceFuturesOrder? x, BinanceFuturesOrder? y)
+        public bool Equals(BinanceFuturesOrder x, BinanceFuturesOrder y)
         {
             return x.OrderId == y.OrderId;
         }
