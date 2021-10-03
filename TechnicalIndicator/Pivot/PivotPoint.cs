@@ -17,9 +17,9 @@ namespace TechnicalIndicator.Pivot
             _pivotPoint = pivotPoint;
         }
 
-        public Pivot GetPivotPoint(Kline price)
+        public Pivot GetPivotPoint(decimal high, decimal low, decimal close)
         {
-            return _pivotPoint.Calculate(price.High, price.Low, price.Close);
+            return _pivotPoint.Calculate(high, close, low);
         }
     }
 }
