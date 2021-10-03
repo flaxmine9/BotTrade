@@ -358,8 +358,7 @@ namespace Binance
 
         public async Task<IEnumerable<Kline>> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
         {
-            //var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
-            var klines = await _binanceClient.Spot.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
+            var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
             if (klines.Success)
             {
                 return klines.Data.SkipLast(1).Select(x=> new Kline()
