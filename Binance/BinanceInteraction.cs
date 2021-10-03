@@ -20,17 +20,17 @@ namespace Binance
 
         public BinanceInteraction(string key, string secretKey)
         {
-            //_binanceClient = new BinanceClient(new BinanceClientOptions()
-            //{
-            //    ApiCredentials = new ApiCredentials(key, secretKey)
-            //});
-
-            #region TestNet Binance
-
-            _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            _binanceClient = new BinanceClient(new BinanceClientOptions()
             {
                 ApiCredentials = new ApiCredentials(key, secretKey)
             });
+
+            #region TestNet Binance
+
+            //_binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            //{
+            //    ApiCredentials = new ApiCredentials(key, secretKey)
+            //});
 
             #endregion
         }
@@ -43,7 +43,7 @@ namespace Binance
         /// <param name="position">Текущая открытая позиция</param>
         /// <param name="takeProfit">Профит</param>
         /// <returns>Минимальное количество валюты за один ордер</returns>
-        public decimal CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit)
+        public decimal CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
         {
             var echange = GetInfo(position.Symbol);
             var quantity = echange.LotSizeFilter.MinQuantity;
@@ -75,13 +75,13 @@ namespace Binance
             }
 
             var quantityOrders = Math.Abs(position.Quantity) / quantity;
-            quantityOrders -= (int)quantityOrders % 0.1m;
+            quantityOrders -= quantityOrders % 0.1m;
 
-            if (quantityOrders > 15)
+            if ((int)quantityOrders > maxOrders)
             {
-                for (int i = 15; i > 2; i--)
+                for (int i = maxOrders; i > 2; i--)
                 {
-                    if (quantityOrders > i && (takeProfit - 1.0m) / i > 0.0002m)
+                    if ((int)quantityOrders > i && (takeProfit - 1.0m) / i > 0.0002m)
                     {
                         var quantityRazdelNa15Order = Math.Abs(position.Quantity) / i;
                         quantityRazdelNa15Order -= quantityRazdelNa15Order % echange.LotSizeFilter.MinQuantity;
@@ -358,10 +358,11 @@ namespace Binance
 
         public async Task<IEnumerable<Kline>> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
         {
-            var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
+            //var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
+            var klines = await _binanceClient.Spot.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
             if (klines.Success)
             {
-                return klines.Data.Select(x=> new Kline()
+                return klines.Data.SkipLast(1).Select(x=> new Kline()
                 {
                     Symbol = symbol,
                     Open = x.Open,
