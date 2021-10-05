@@ -39,7 +39,7 @@ namespace Strategy
 
             var gridOrder = new TransformBlock<BinancePositionDetailsUsdt, GridOrder>(position =>
             {
-                return _trade.GetGridOrders(position, _tradeSetting.TakeProfit, _tradeSetting.StopLoss); 
+                return _trade.GetGridOrders(position); 
             });
 
             var createOrders = new TransformBlock<GridOrder, string>(async order =>
@@ -80,7 +80,7 @@ namespace Strategy
         {
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                IEnumerable<BinancePositionDetailsUsdt> positions = await _trade.CheckOpenPositions();
+                IEnumerable<BinancePositionDetailsUsdt> positions = await _trade.GetCurrentOpenPositionsAsync();
                 if (!positions.Any())
                 {
                     currentOpenPositions = new List<BinancePositionDetailsUsdt>();
@@ -101,38 +101,6 @@ namespace Strategy
                 }
                 await Task.Delay(1500);
             }
-        }
-
-        public async Task ProduceSignals()
-        {
-            // Поиск сигналов по индикатором: ssl, super trend и ...
-
-            // Если сигнал найден, то добавляем в TransferBlock<Signal, string>(symbol =>
-            // {
-            //Получаем сигнал
-            // Заходим в рынок по маркету
-            // Передаем название валюты в другой блок по которой вошли в позицию
-            // });
-
-            // TransferBlock<string, BinanceFuturePosition>(symbol =>
-            // {
-            // Получаем позицию по переданной валюте и передаем другому блоку
-            // })
-
-            // TransferBlock<BinanceFuturePosition, GridOrder>(symbol =>
-            // {
-            // Формируем limits, stop Market и TakeProfit ордера и передаем другому блоку
-            // })
-
-            // TransferBlock<GridOrder, string>(symbol =>
-            // {
-            // Ставим ордера и передаем валюту другому блоку по которой будем контролировать их 
-            // })
-
-            // ActionBlock<string>(symbol =>
-            // {
-            //   контролируем ордера по переданной валюте
-            // })
         }
     }
 }
