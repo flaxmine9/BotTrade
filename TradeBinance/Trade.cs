@@ -1,4 +1,5 @@
 ﻿using Binance;
+using Binance.Models;
 using Binance.Net.Enums;
 using Binance.Net.Interfaces;
 using Binance.Net.Objects.Futures.FuturesData;
@@ -38,11 +39,28 @@ namespace TradeBinance
             var placedStopOrders = await _binanceInteraction.PlaceClosePositionOrdersAsync(gridOrders.ClosePositionOrders);
         }
 
+        public async Task SetTradeSettings(IEnumerable<string> symbols)
+        {
+            await Task.WhenAll(symbols.Select(s => _binanceInteraction.SetSettingsAsync(s, _tradeSetting.Leverage, _tradeSetting.FuturesMarginType)));
+        }
+
         /// <summary>
-        /// Проверяем новые открытые позиции
+        /// Получаем открытую позицию
         /// </summary>
-        /// <returns>Позиции</returns>
-        public async Task<IEnumerable<BinancePositionDetailsUsdt>> CheckOpenPositions()
+        /// <param name="symbol">валюта</param>
+        /// <returns></returns>
+        public async Task<BinancePositionDetailsUsdt> GetCurrentOpenPositionAsync(string symbol)
+        {
+            return await _binanceInteraction.GetCurrentOpenPositionAsync(symbol);
+        }
+
+
+        /// <summary>
+        /// Получаем открытую позицию
+        /// </summary>
+        /// <param name="symbol">валюта</param>
+        /// <returns></returns>
+        public async Task<IEnumerable<BinancePositionDetailsUsdt>> GetCurrentOpenPositionsAsync()
         {
             return await _binanceInteraction.GetCurrentOpenPositionsAsync();
         }
@@ -142,7 +160,6 @@ namespace TradeBinance
                         }
 
                     }
-                    await Task.Delay(200);
                 }
             }
         }
@@ -154,14 +171,13 @@ namespace TradeBinance
         /// <param name="takeProfit">Профит</param>
         /// <param name="stopLoss">Стоп лосс</param>
         /// <returns>Ордера</returns>
-        public GridOrder GetGridOrders(BinancePositionDetailsUsdt position, decimal takeProfit, decimal stopLoss)
+        public GridOrder GetGridOrders(BinancePositionDetailsUsdt position)
         {
             BinanceFuturesUsdtSymbol symbolInfo = _binanceInteraction.GetInfo(position.Symbol);
 
-            decimal quantitiesAsset = _binanceInteraction.CalculateQuantity(position, takeProfit, _tradeSetting.MaxOrders);
-            int quantityOrders = _binanceInteraction.CountQuantityOrders(position, quantitiesAsset);
+            OrderInfo orderInfo = _binanceInteraction.CalculateQuantity(position, _tradeSetting.TakeProfit, _tradeSetting.MaxOrders);
 
-            decimal percentBetweenOrders = _binanceInteraction.CountPercenBetweenOrders(takeProfit, quantityOrders);
+            decimal percentBetweenOrders = _binanceInteraction.CountPercenBetweenOrders(_tradeSetting.TakeProfit, orderInfo.QuantityOrders);
 
             OrderSide orderSide = position.Quantity < 0 ? OrderSide.Buy : OrderSide.Sell;
 
@@ -171,8 +187,8 @@ namespace TradeBinance
                 LimitOrders = new List<BinanceFuturesBatchOrder>()
             };
 
-            decimal priceTakeProfitMarket = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / takeProfit : position.EntryPrice * takeProfit;
-            decimal priceStopMarket = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice * stopLoss : position.EntryPrice / stopLoss;
+            decimal priceTakeProfitMarket = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / _tradeSetting.TakeProfit : position.EntryPrice * _tradeSetting.TakeProfit;
+            decimal priceStopMarket = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice * _tradeSetting.StopLoss : position.EntryPrice / _tradeSetting.StopLoss;
 
             gridOrder.ClosePositionOrders.AddRange(new List<BinanceFuturesPlacedOrder>()
             {
@@ -196,7 +212,7 @@ namespace TradeBinance
                 }
             });
 
-            for (short i = 1; i < quantityOrders + 1; i++)
+            for (short i = 1; i < orderInfo.QuantityOrders + 1; i++)
             {
                 decimal price = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / (1 + percentBetweenOrders * i) : position.EntryPrice * (1 + percentBetweenOrders * i);
                 price -= price % symbolInfo.PriceFilter.TickSize;
@@ -207,7 +223,7 @@ namespace TradeBinance
                     Symbol = position.Symbol,
                     Type = OrderType.Limit,
                     TimeInForce = TimeInForce.GoodTillCancel,
-                    Quantity = quantitiesAsset,
+                    Quantity = orderInfo.QuantityAsset,
                     Price = price,
                     WorkingType = WorkingType.Contract
                 });
@@ -227,6 +243,36 @@ namespace TradeBinance
                 Low = x.Low,
                 Open = x.Open
             });
+        }
+
+        public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, int limit)
+        {
+            return await _binanceInteraction.GetKlinesAsync(symbols, KlineInterval.FiveMinutes, limit: limit);
+        }
+
+        public async Task<bool> EntryMarket(string symbol, decimal partOfBalance, TypePosition typePosition)
+        {
+            var info = _binanceInteraction.GetInfo(symbol);
+
+            var taskBalanceUSDT = _binanceInteraction.GetBalanceAsync();
+            var taskCurrentPrice = _binanceInteraction.GetCurrentPrice(symbol);
+
+            decimal balanceUSDT = await taskBalanceUSDT;
+            decimal currentPrice = await taskCurrentPrice;
+
+            if(balanceUSDT > 0 && currentPrice > 0)
+            {
+                decimal quantityAsset = (balanceUSDT * partOfBalance * _tradeSetting.Leverage) / currentPrice;
+                quantityAsset -= quantityAsset % info.LotSizeFilter.StepSize;
+
+                var placeMarketOrder = await _binanceInteraction.MarketPlaceOrderAsync(symbol, quantityAsset, typePosition.Equals(TypePosition.Long) ? OrderSide.Buy : OrderSide.Sell);
+                if (placeMarketOrder != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
