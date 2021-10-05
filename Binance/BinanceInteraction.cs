@@ -1,4 +1,5 @@
-﻿using Binance.Net;
+﻿using Binance.Models;
+using Binance.Net;
 using Binance.Net.Enums;
 using Binance.Net.Interfaces;
 using Binance.Net.Objects;
@@ -43,8 +44,11 @@ namespace Binance
         /// <param name="position">Текущая открытая позиция</param>
         /// <param name="takeProfit">Профит</param>
         /// <returns>Минимальное количество валюты за один ордер</returns>
-        public decimal CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
+        public OrderInfo CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
         {
+            OrderInfo orderInfo = new OrderInfo();
+            int realyQuantityOrder = 0;
+
             var echange = GetInfo(position.Symbol);
             var quantity = echange.LotSizeFilter.MinQuantity;
 
@@ -87,12 +91,15 @@ namespace Binance
                         quantityRazdelNa15Order -= quantityRazdelNa15Order % echange.LotSizeFilter.MinQuantity;
 
                         quantity = quantityRazdelNa15Order;
-                        break;
+
+                        return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = i };
                     }
                 }
             }
 
-            return GetNormalizeLotSize(position.Symbol, quantity);
+            realyQuantityOrder = (int)quantityOrders;
+
+            return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = realyQuantityOrder };
         }
 
         /// <summary>
@@ -287,6 +294,17 @@ namespace Binance
             return false;
         }
 
+        public async Task<BinanceFuturesPlacedOrder> MarketPlaceOrderAsync(string symbol, decimal quantity, OrderSide orderSide)
+        {
+            var marketOrder = await _binanceClient.FuturesUsdt.Order.PlaceOrderAsync(symbol, orderSide, OrderType.Market, quantity);
+            if (marketOrder.Success)
+            {
+                return marketOrder.Data;
+            }
+
+            return null;
+        }
+
         #endregion
 
 
@@ -318,7 +336,7 @@ namespace Binance
             var position = await _binanceClient.FuturesUsdt.GetPositionInformationAsync();
             if (position.Success)
             {
-                return position.Data.Where(x => x.EntryPrice != 0 && !x.Symbol.Equals("YFIIUSDT"));
+                return position.Data.Where(x => x.EntryPrice != 0);
             }
 
             return new List<BinancePositionDetailsUsdt>();
@@ -334,7 +352,7 @@ namespace Binance
             var position = await _binanceClient.FuturesUsdt.GetPositionInformationAsync(symbol);
             if (position.Success)
             {
-                return position.Data.FirstOrDefault();
+                return position.Data.First();
             }
 
             return null;
@@ -346,12 +364,24 @@ namespace Binance
         /// <param name="symbols">Список валют</param>
         /// <param name="limit">Количество свечей</param>
         /// <returns>Список свечей</returns>
-        public async Task<IEnumerable<IEnumerable<IBinanceKline>>> GetKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, int limit)
+        public async Task<IEnumerable<IEnumerable<Kline>>> GetKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, int limit)
         {
             var klines = (await Task.WhenAll(symbols
             .Select(symbol => _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit))))
                 .Where(x => x.Success)
-                .Select(x => x.Data.SkipLast(1));
+                .Select(x => x.Data)
+                .Select((klines, numer) => klines.Select(kline => new Kline()
+                {
+                    Close = kline.Close,
+                    High = kline.High,
+                    Low = kline.Low,
+                    Open= kline.Open,
+                    Symbol = symbols.ToList()[numer],
+                    Volume = kline.BaseVolume,
+                    TakerBuyBaseVolume = kline.TakerBuyBaseVolume,
+                    TakerBuyQuoteVolume= kline.TakerBuyQuoteVolume,
+                    TradeCount = kline.TradeCount
+                }));
 
             return klines;
         }
@@ -373,5 +403,37 @@ namespace Binance
 
             return new List<Kline>();
         }
+
+        /// <summary>
+        /// Узнаем баланс фьючерсного кошелька (USDT)
+        /// </summary>
+        /// <returns>Баланс</returns>
+        public async Task<decimal> GetBalanceAsync()
+        {
+            var balance = await _binanceClient.FuturesUsdt.Account.GetBalanceAsync();
+            if (balance.Success)
+            {
+                return balance.Data.Where(x => x.Asset.Equals("USDT")).First().AvailableBalance;
+            }
+
+            return -1;
+        }
+
+
+
+        #region market methods
+
+        public async Task<decimal> GetCurrentPrice(string symbol)
+        {
+            var price = await _binanceClient.FuturesUsdt.Market.GetPriceAsync(symbol);
+            if (price.Success)
+            {
+                return price.Data.Price;
+            }
+
+            return -1;
+        }
+
+        #endregion
     }
 }
