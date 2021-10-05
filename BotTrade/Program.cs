@@ -22,24 +22,25 @@ namespace FlaxTrade
             //string secretKeyTestKirill = "243ed78641c70fd7a7336a05d26cde385ec8f1d3ce1320aa8bfd1bbe4bb96f7b";
 
 
-            Client client = new Client(new ApiSetting() { Key = key, SecretKey = secretKey });
-            client.AddStrategy(new StrategyCPR
-                (
-                   new TradeSetting(takeProfit: 1.02m, stopLoss: 1.015m, leverage: 5, futuresMarginType: "Isolated", maxOrders: 5),
-                   new PivotPoint(new Traditional())
-
-                ));
-
-            client.StartStrategies();
-
-
             //Client client = new Client(new ApiSetting() { Key = key, SecretKey = secretKey });
-            //client.AddStrategy(new SuperTrendHeikin
+            //client.AddStrategy(new StrategyCPR
             //    (
-            //       new TradeSetting(takeProfit: 1.02m, stopLoss: 1.015m, leverage: 5, futuresMarginType: "Isolated")
+            //       new TradeSetting(takeProfit: 1.02m, stopLoss: 1.015m, leverage: 5, futuresMarginType: "Isolated", maxOrders: 5),
+            //       new PivotPoint(new Traditional())
+
             //    ));
 
             //client.StartStrategies();
+
+
+
+            Client client = new Client(new ApiSetting() { Key = key, SecretKey = secretKey });
+            client.AddStrategy(new Scalping
+                (
+                   new TradeSetting(takeProfit: 1.008m, stopLoss: 1.008m, leverage: 3, futuresMarginType: "Isolated", maxOrders: 3)
+                ));
+
+            client.StartStrategies();
 
             Console.ReadLine();
         }
