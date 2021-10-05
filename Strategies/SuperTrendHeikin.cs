@@ -32,7 +32,7 @@ namespace Strategies
 
         public async Task Logic()
         {
-            
+            await Task.Delay(1);
         }
 
         public async Task Start(string key, string secretKey)
@@ -43,11 +43,6 @@ namespace Strategies
 
             var superTrend = _superTtrend.GetSuperTrend(klines).Last();
             var smoothHeikin = _smoothedHeikin.GetSmoothedHeikinAshi(klines);
-        }
-
-        public async Task ProduceSignal()
-        {
-           
         }
     }
 }
