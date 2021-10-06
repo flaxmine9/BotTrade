@@ -79,6 +79,7 @@ namespace TradeBinance
         {
             Console.WriteLine($"{symbol}: Контролируем ордера");
 
+            // По параметру передаем ордера которые поставили, вместо запроса на получение
             IEnumerable<BinanceFuturesOrder> openCurrentOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false);
 
             if (openCurrentOrders.Any())
@@ -162,6 +163,7 @@ namespace TradeBinance
                     }
                 }
             }
+            else { return; }
         }
        
         /// <summary>
@@ -212,7 +214,7 @@ namespace TradeBinance
                 }
             });
 
-            for (short i = 1; i < orderInfo.QuantityOrders + 1; i++)
+            for (short i = 1; i < orderInfo.QuantityOrders; i++)
             {
                 decimal price = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / (1 + percentBetweenOrders * i) : position.EntryPrice * (1 + percentBetweenOrders * i);
                 price -= price % symbolInfo.PriceFilter.TickSize;
