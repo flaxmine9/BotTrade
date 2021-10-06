@@ -37,7 +37,7 @@ namespace FlaxTrade
             Client client = new Client(new ApiSetting() { Key = key, SecretKey = secretKey });
             client.AddStrategy(new Scalping
                 (
-                   new TradeSetting(takeProfit: 1.008m, stopLoss: 1.008m, leverage: 3, futuresMarginType: "Isolated", maxOrders: 3)
+                   new TradeSetting(takeProfit: 1.01m, stopLoss: 1.005m, leverage: 3, futuresMarginType: "Isolated", maxOrders: 5, partOfBalance: 0.97m)
                 ));
 
             client.StartStrategies();
