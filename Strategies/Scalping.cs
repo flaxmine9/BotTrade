@@ -1,9 +1,7 @@
-﻿using Binance.Net.Interfaces;
-using Strategy.Interfaces;
+﻿using Strategy.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using TechnicalIndicator.Models;
@@ -48,7 +46,7 @@ namespace Strategies
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                IEnumerable<IEnumerable<Kline>> klines = await _trade.GetLstKlinesAsync(_symbols, limit: 10);
+                IEnumerable<IEnumerable<Kline>> klines = await _trade.GetLstKlinesAsync(_symbols, limit: 5);
 
                 List<Kline> klinesPumps = CheckPumpVolumesAsync(klines).ToList();
                 if (klinesPumps.Any())
@@ -60,7 +58,7 @@ namespace Strategies
 
                     TypePosition typePosition = randomKlinePump.Close > randomKlinePump.Open ? TypePosition.Long : TypePosition.Short;
 
-                    bool entriedMarket = await _trade.EntryMarket(randomKlinePump.Symbol, 0.5m, typePosition);
+                    bool entriedMarket = await _trade.EntryMarket(randomKlinePump.Symbol, _tradeSetting.PartOfBalance, typePosition);
                     if (entriedMarket)
                     {
                         Console.WriteLine("Зашли в позицию по валюте: {0}", randomKlinePump.Symbol);
@@ -73,10 +71,26 @@ namespace Strategies
                             Console.WriteLine("Поставили ордера по валюте {0}", randomKlinePump.Symbol);
 
                             await _trade.ControlOrders(randomKlinePump.Symbol);
+
+                            var klineForTime = await _trade.GetKlinesAsync(randomKlinePump.Symbol, limit: 1);
+
+                            if (klineForTime.Any())
+                            {
+                                var timeNow = DateTime.Now.ToUniversalTime();
+
+                                TimeSpan waitTime = klineForTime.Last().CloseTime.AddMilliseconds(200) - timeNow;
+
+                                Console.WriteLine($"Ждем завершения формирования свечи {klineForTime.Last().Symbol}: {(int)waitTime.TotalSeconds} секунд");
+
+                                await Task.Delay((int)waitTime.TotalMilliseconds);
+
+                                Console.WriteLine("Свеча сформировалась! Ищем дальше сигналы");
+
+                            }
                         }
                     }
                 }
-                await Task.Delay(200);
+                //await Task.Delay(200);
             }
         }
 
@@ -97,11 +111,8 @@ namespace Strategies
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
                 decimal avrVolumeNineKlines = lstKlines.SkipLast(1).Average(x => x.Volume);
-                if (lstKlines.Last().Volume >= avrVolumeNineKlines * 3.5m
-                    && (lstKlines.Last().Close > lstKlines.Last().Open
-                    ? lstKlines.Last().Close / lstKlines.Last().Open >= 1.5m
-                    : lstKlines.Last().Open / lstKlines.Last().Close >= 1.5m)
-                    )
+                if (lstKlines.Last().Volume >= avrVolumeNineKlines * 3.0m
+                    && (lstKlines.Last().Close / lstKlines.Last().Open >= 1.003m || lstKlines.Last().Open / lstKlines.Last().Close >= 1.003m))
                 {
                     list.Add(lstKlines.Last());
                 }
