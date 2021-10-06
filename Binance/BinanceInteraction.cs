@@ -380,7 +380,9 @@ namespace Binance
                     Volume = kline.BaseVolume,
                     TakerBuyBaseVolume = kline.TakerBuyBaseVolume,
                     TakerBuyQuoteVolume= kline.TakerBuyQuoteVolume,
-                    TradeCount = kline.TradeCount
+                    TradeCount = kline.TradeCount,
+                    CloseTime = kline.CloseTime,
+                    OpenTime = kline.OpenTime
                 }));
 
             return klines;
