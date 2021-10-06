@@ -1,4 +1,6 @@
-﻿namespace TechnicalIndicator.Models
+﻿using System;
+
+namespace TechnicalIndicator.Models
 {
     public class Kline
     {
@@ -11,5 +13,8 @@
         public int TradeCount { get; set; }
         public decimal TakerBuyBaseVolume { get; set; }
         public decimal TakerBuyQuoteVolume { get; set; }
+
+        public DateTime CloseTime { get; set; }
+        public DateTime OpenTime { get; set; }
     }
 }
