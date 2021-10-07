@@ -39,10 +39,7 @@ namespace Strategies
         {
             _trade = new Trade(key, secretKey, _tradeSetting);
 
-            var klines = (await _trade.GetKlinesAsync("BTCUSDT", 200));
-
-            var superTrend = _superTtrend.GetSuperTrend(klines).Last();
-            var smoothHeikin = _smoothedHeikin.GetSmoothedHeikinAshi(klines);
+            
         }
     }
 }
