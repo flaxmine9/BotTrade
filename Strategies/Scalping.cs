@@ -72,15 +72,15 @@ namespace Strategies
 
                             await _trade.ControlOrders(randomKlinePump.Symbol);
 
-                            var klineForTime = await _trade.GetKlinesAsync(randomKlinePump.Symbol, limit: 1);
+                            var klineForTime = await _trade.GetKlineAsync(randomKlinePump.Symbol, limit: 1);
 
-                            if (klineForTime.Any())
+                            if (klineForTime != null)
                             {
                                 var timeNow = DateTime.Now.ToUniversalTime();
 
-                                TimeSpan waitTime = klineForTime.Last().CloseTime.AddMilliseconds(200) - timeNow;
+                                TimeSpan waitTime = klineForTime.CloseTime.AddMilliseconds(200) - timeNow;
 
-                                Console.WriteLine($"Ждем завершения формирования свечи {klineForTime.Last().Symbol}: {(int)waitTime.TotalSeconds} секунд");
+                                Console.WriteLine($"Ждем завершения формирования свечи {klineForTime.Symbol}: {(int)waitTime.TotalSeconds} секунд");
 
                                 await Task.Delay((int)waitTime.TotalMilliseconds);
 
