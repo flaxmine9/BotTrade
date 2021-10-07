@@ -234,17 +234,9 @@ namespace TradeBinance
             return gridOrder;
         }
 
-        public async Task<IEnumerable<Kline>> GetKlinesAsync(string symbol, int limit)
+        public async Task<Kline> GetKlineAsync(string symbol, int limit)
         {
-            var result = await _binanceInteraction.GetKlineAsync(symbol, KlineInterval.FiveMinutes, limit: limit);
-
-            return result.Select(x => new Kline()
-            {
-                Close = x.Close,
-                High = x.High,
-                Low = x.Low,
-                Open = x.Open
-            });
+            return await _binanceInteraction.GetKlineAsync(symbol, KlineInterval.FiveMinutes, limit);
         }
 
         public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, int limit)
