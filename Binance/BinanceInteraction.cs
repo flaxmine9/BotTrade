@@ -388,22 +388,30 @@ namespace Binance
             return klines;
         }
 
-        public async Task<IEnumerable<Kline>> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
+        public async Task<Kline> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
         {
             var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
             if (klines.Success)
             {
-                return klines.Data.SkipLast(1).Select(x=> new Kline()
+                var kline = klines.Data.First();
+
+                return new Kline()
                 {
+                    Close = kline.Close,
+                    High = kline.High,
+                    Low = kline.Low,
+                    Open = kline.Open,
                     Symbol = symbol,
-                    Open = x.Open,
-                    Low= x.Low,
-                    High= x.High,
-                    Close = x.Close
-                });
+                    Volume = kline.BaseVolume,
+                    TakerBuyBaseVolume = kline.TakerBuyBaseVolume,
+                    TakerBuyQuoteVolume = kline.TakerBuyQuoteVolume,
+                    TradeCount = kline.TradeCount,
+                    CloseTime = kline.CloseTime,
+                    OpenTime = kline.OpenTime
+                };
             }
 
-            return new List<Kline>();
+            return null;
         }
 
         /// <summary>
