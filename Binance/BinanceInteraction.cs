@@ -21,17 +21,17 @@ namespace Binance
 
         public BinanceInteraction(string key, string secretKey)
         {
-            _binanceClient = new BinanceClient(new BinanceClientOptions()
-            {
-                ApiCredentials = new ApiCredentials(key, secretKey)
-            });
-
-            #region TestNet Binance
-
-            //_binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            //_binanceClient = new BinanceClient(new BinanceClientOptions()
             //{
             //    ApiCredentials = new ApiCredentials(key, secretKey)
             //});
+
+            #region TestNet Binance
+
+            _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            {
+                ApiCredentials = new ApiCredentials(key, secretKey)
+            });
 
             #endregion
         }
@@ -377,7 +377,8 @@ namespace Binance
                     Low = kline.Low,
                     Open= kline.Open,
                     Symbol = symbols.ToList()[numer],
-                    Volume = kline.BaseVolume,
+                    BaseVolume = kline.BaseVolume,
+                    QuoteVolume = kline.QuoteVolume,
                     TakerBuyBaseVolume = kline.TakerBuyBaseVolume,
                     TakerBuyQuoteVolume= kline.TakerBuyQuoteVolume,
                     TradeCount = kline.TradeCount,
@@ -402,7 +403,8 @@ namespace Binance
                     Low = kline.Low,
                     Open = kline.Open,
                     Symbol = symbol,
-                    Volume = kline.BaseVolume,
+                    BaseVolume = kline.BaseVolume,
+                    QuoteVolume = kline.QuoteVolume,
                     TakerBuyBaseVolume = kline.TakerBuyBaseVolume,
                     TakerBuyQuoteVolume = kline.TakerBuyQuoteVolume,
                     TradeCount = kline.TradeCount,
