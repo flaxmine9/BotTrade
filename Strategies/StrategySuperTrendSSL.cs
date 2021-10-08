@@ -42,7 +42,7 @@ namespace Strategies
             for (uint i = 0; i < uint.MaxValue; i++)
             {
                 var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), periodKlines);
-                Position signal = GetSignal(klines.SkipLast(1));
+                Position signal = GetSignal(klines);
 
                 if (signal != null)
                 {
