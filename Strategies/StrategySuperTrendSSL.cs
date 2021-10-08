@@ -35,21 +35,14 @@ namespace Strategies
             };
         }
 
-        public Task Logic()
+        public async Task Logic()
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task Start(string key, string secretKey)
-        {
-            _trade = new Trade(key, secretKey, _tradeSetting);
-
             int periodKlines = 200;
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
                 var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), periodKlines);
-                Position signal = GetSignal(klines);
+                Position signal = GetSignal(klines.SkipLast(1));
 
                 if (signal != null)
                 {
@@ -72,6 +65,15 @@ namespace Strategies
                 }
                 await Task.Delay((60 - DateTime.Now.Second + 1) * 1000);
             }
+        }
+
+        public async Task Start(string key, string secretKey)
+        {
+            _trade = new Trade(key, secretKey, _tradeSetting);
+
+            await _trade.SetExchangeInformationAsync();
+
+            await Logic();
         }
 
         private Position GetSignal(IEnumerable<IEnumerable<Kline>> klines)
