@@ -370,7 +370,7 @@ namespace Binance
             .Select(symbol => _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit))))
                 .Where(x => x.Success)
                 .Select(x => x.Data)
-                .Select((klines, numer) => klines.Select(kline => new Kline()
+                .Select((klines, numer) => klines.SkipLast(1).Select(kline => new Kline()
                 {
                     Close = kline.Close,
                     High = kline.High,
