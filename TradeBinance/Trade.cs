@@ -35,8 +35,11 @@ namespace TradeBinance
 
         public async Task PlaceOrders(GridOrder gridOrders)
         {
-            var placedLimitOrders = await _binanceInteraction.PlaceBatchesAsync(gridOrders.LimitOrders);
-            var placedStopOrders = await _binanceInteraction.PlaceClosePositionOrdersAsync(gridOrders.ClosePositionOrders);
+            var taskPlacedStopOrders = _binanceInteraction.PlaceClosePositionOrdersAsync(gridOrders.ClosePositionOrders);
+            var taskPlacedLimitOrders = _binanceInteraction.PlaceBatchesAsync(gridOrders.LimitOrders);
+            
+            await taskPlacedStopOrders;
+            await taskPlacedLimitOrders;
         }
 
         public async Task SetTradeSettings(IEnumerable<string> symbols)
@@ -241,30 +244,22 @@ namespace TradeBinance
 
         public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, int limit)
         {
-            return await _binanceInteraction.GetKlinesAsync(symbols, KlineInterval.FiveMinutes, limit: limit);
+            return await _binanceInteraction.GetKlinesAsync(symbols, KlineInterval.OneMinute, limit: limit);
         }
 
-        public async Task<bool> EntryMarket(string symbol, decimal partOfBalance, TypePosition typePosition)
+        public async Task<bool> EntryMarket(string symbol, decimal price, decimal balanceUSDT, TypePosition typePosition)
         {
             var info = _binanceInteraction.GetInfo(symbol);
 
-            var taskBalanceUSDT = _binanceInteraction.GetBalanceAsync();
-            var taskCurrentPrice = _binanceInteraction.GetCurrentPrice(symbol);
+            decimal quantityAsset = (balanceUSDT * _tradeSetting.Leverage) / price;
+            quantityAsset -= quantityAsset % info.LotSizeFilter.StepSize;
 
-            decimal balanceUSDT = await taskBalanceUSDT;
-            decimal currentPrice = await taskCurrentPrice;
-
-            if(balanceUSDT > 0 && currentPrice > 0)
+            var placeMarketOrder = await _binanceInteraction.MarketPlaceOrderAsync(symbol, quantityAsset, typePosition.Equals(TypePosition.Long) ? OrderSide.Buy : OrderSide.Sell);
+            if (placeMarketOrder != null)
             {
-                decimal quantityAsset = (balanceUSDT * partOfBalance * _tradeSetting.Leverage) / currentPrice;
-                quantityAsset -= quantityAsset % info.LotSizeFilter.StepSize;
-
-                var placeMarketOrder = await _binanceInteraction.MarketPlaceOrderAsync(symbol, quantityAsset, typePosition.Equals(TypePosition.Long) ? OrderSide.Buy : OrderSide.Sell);
-                if (placeMarketOrder != null)
-                {
-                    return true;
-                }
+                return true;
             }
+
 
             return false;
         }
