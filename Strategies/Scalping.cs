@@ -1,4 +1,5 @@
-﻿using Strategy.Interfaces;
+﻿using Strategies.Models;
+using Strategy.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +19,7 @@ namespace Strategies
         private bool flag { get; set; } = true;
 
         private List<string> _symbols { get; set; }
+        private IEnumerable<Pump> _pumps { get; set; }
 
         private BufferBlock<IEnumerable<IEnumerable<Kline>>> _bufferKlines { get; set; }
 
@@ -29,12 +31,18 @@ namespace Strategies
 
             _symbols = new List<string>()
             {
-                "FTMUSDT", "LRCUSDT", "KEEPUSDT",
-                "BALUSDT", "DODOUSDT", "SCUSDT", "AKROUSDT",
-                "DGBUSDT", "SFPUSDT", "STMXUSDT", "ALPHAUSDT",
-                "NKNUSDT", "OCEANUSDT", "ATAUSDT", "BELUSDT",
-                "GRTUSDT", "FLMUSDT", "SFPUSDT", "ETHUSDT",
-                "COTIUSDT", "ADAUSDT"
+                "ATAUSDT", "COTIUSDT", "FTMUSDT", "NKNUSDT",
+                "KEEPUSDT", "ADAUSDT"
+            };
+
+            _pumps = new List<Pump>()
+            {
+                new Pump() { Symbol = "ATAUSDT", VolumeUSDT = 200000.0m },
+                new Pump() { Symbol = "COTIUSDT", VolumeUSDT = 1000000.0m },
+                new Pump() { Symbol = "FTMUSDT", VolumeUSDT = 9000000.0m },
+                new Pump() { Symbol = "NKNUSDT", VolumeUSDT = 200000.0m },
+                new Pump() { Symbol = "KEEPUSDT", VolumeUSDT = 90000.0m },
+                new Pump() { Symbol = "ADAUSDT", VolumeUSDT = 2500000.0m },
             };
         }
 
@@ -46,19 +54,19 @@ namespace Strategies
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                IEnumerable<IEnumerable<Kline>> klines = await _trade.GetLstKlinesAsync(_symbols, limit: 5);
+                IEnumerable<IEnumerable<Kline>> klines = await _trade.GetLstKlinesAsync(_symbols, limit: 1);
 
                 List<Kline> klinesPumps = CheckPumpVolumesAsync(klines).ToList();
                 if (klinesPumps.Any())
                 {
                     Kline randomKlinePump = klinesPumps[random.Next(0, klinesPumps.Count)];
 
-                    Console.WriteLine($"Symbol: {randomKlinePump.Symbol}\n " +
+                    Console.WriteLine($"Symbol: {randomKlinePump.Symbol}\n" +
                         $"Time: {DateTime.Now.ToLocalTime()}");
 
                     TypePosition typePosition = randomKlinePump.Close > randomKlinePump.Open ? TypePosition.Long : TypePosition.Short;
 
-                    bool entriedMarket = await _trade.EntryMarket(randomKlinePump.Symbol, _tradeSetting.PartOfBalance, typePosition);
+                    bool entriedMarket = await _trade.EntryMarket(randomKlinePump.Symbol, price: randomKlinePump.Close, _tradeSetting.BalanceUSDT, typePosition);
                     if (entriedMarket)
                     {
                         Console.WriteLine("Зашли в позицию по валюте: {0}", randomKlinePump.Symbol);
@@ -78,7 +86,7 @@ namespace Strategies
                             {
                                 var timeNow = DateTime.Now.ToUniversalTime();
 
-                                TimeSpan waitTime = klineForTime.CloseTime.AddMilliseconds(200) - timeNow;
+                                TimeSpan waitTime = klineForTime.CloseTime.AddMilliseconds(1100) - timeNow;
 
                                 Console.WriteLine($"Ждем завершения формирования свечи {klineForTime.Symbol}: {(int)waitTime.TotalSeconds} секунд");
 
@@ -104,15 +112,32 @@ namespace Strategies
             await Logic();
         }
 
+        //private IEnumerable<Kline> CheckPumpVolumesAsync(IEnumerable<IEnumerable<Kline>> klines)
+        //{
+        //    List<Kline> list = new List<Kline>();
+
+        //    foreach (IEnumerable<Kline> lstKlines in klines)
+        //    {
+        //        decimal avrVolumeNineKlines = lstKlines.SkipLast(1).Average(x => x.Volume);
+        //        if (lstKlines.Last().Volume >= avrVolumeNineKlines * 3.5m
+        //            && (lstKlines.Last().Close / lstKlines.Last().Open >= 1.0035m || lstKlines.Last().Open / lstKlines.Last().Close >= 1.0035m))
+        //        {
+        //            list.Add(lstKlines.Last());
+        //        }
+        //    }
+
+        //    return list;
+        //}
+
         private IEnumerable<Kline> CheckPumpVolumesAsync(IEnumerable<IEnumerable<Kline>> klines)
         {
             List<Kline> list = new List<Kline>();
 
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
-                decimal avrVolumeNineKlines = lstKlines.SkipLast(1).Average(x => x.Volume);
-                if (lstKlines.Last().Volume >= avrVolumeNineKlines * 3.0m
-                    && (lstKlines.Last().Close / lstKlines.Last().Open >= 1.003m || lstKlines.Last().Open / lstKlines.Last().Close >= 1.003m))
+                decimal volumeUSDT = _pumps.Where(x => x.Symbol.Equals(lstKlines.Last().Symbol)).First().VolumeUSDT;
+                if (lstKlines.Last().QuoteVolume >= volumeUSDT
+                    && (lstKlines.Last().Close / lstKlines.Last().Open >= 1.005m || lstKlines.Last().Open / lstKlines.Last().Close >= 1.005m))
                 {
                     list.Add(lstKlines.Last());
                 }

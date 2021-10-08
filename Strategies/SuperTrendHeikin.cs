@@ -39,7 +39,7 @@ namespace Strategies
         {
             _trade = new Trade(key, secretKey, _tradeSetting);
 
-            
+            await Task.Delay(1);
         }
     }
 }
