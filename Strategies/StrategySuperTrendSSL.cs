@@ -82,8 +82,8 @@ namespace Strategies
             {
                 SuperTrendSSLData data = _superTrendSSLData.Where(x => lstKlines.First().Symbol.Equals(x.Symbol)).First();
 
-                SSlValues ssl = _ssl.GetSSL(lstKlines.SkipLast(1), data.Period);
-                SuperTrendResult superTrend = _superTrend.GetSuperTrend(lstKlines.SkipLast(1), data.ATRPeriod, data.ATRMultiplier).Last();
+                SSlValues ssl = _ssl.GetSSL(lstKlines, data.Period);
+                SuperTrendResult superTrend = _superTrend.GetSuperTrend(lstKlines, data.ATRPeriod, data.ATRMultiplier).Last();
 
                 if (superTrend.LowerBand != null && lstKlines.Last().Close > superTrend.LowerBand && _ssl.CrossOverLong(ssl))
                 {
