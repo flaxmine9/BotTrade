@@ -57,7 +57,7 @@ namespace Binance
                 for (int i = 0; i < 500000; i++)
                 {
                     var gg = quantity * position.EntryPrice;
-                    if (gg <= 5.1m)
+                    if (gg <= 10.1m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -70,7 +70,7 @@ namespace Binance
 
                 for (int i = 0; i < 500000; i++)
                 {
-                    if (quantity * priceTakeProfit <= 5.1m)
+                    if (quantity * priceTakeProfit <= 10.1m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
