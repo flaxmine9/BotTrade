@@ -41,30 +41,38 @@ namespace Strategies
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), periodKlines);
-                Position signal = GetSignal(klines);
-
-                if (signal != null)
+                try
                 {
-                    bool entriedMarket = await _trade.EntryMarket(signal.Symbol, price: signal.Price, _tradeSetting.BalanceUSDT, signal.TypePosition);
-                    if (entriedMarket)
+                    var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), periodKlines);
+                    Position signal = GetSignal(klines);
+
+                    if (signal != null)
                     {
-                        Console.WriteLine($"Зашли в позицию по валюте: {signal.Symbol}\n" +
-                            $"Позиция: {signal.TypePosition.ToString()}");
-                        var position = await _trade.GetCurrentOpenPositionAsync(signal.Symbol);
-                        if (position != null)
+                        bool entriedMarket = await _trade.EntryMarket(signal.Symbol, price: signal.Price, _tradeSetting.BalanceUSDT, signal.TypePosition);
+                        if (entriedMarket)
                         {
-                            var gridOrders = _trade.GetGridOrders(position);
-                            await _trade.PlaceOrders(gridOrders);
+                            Console.WriteLine($"Зашли в позицию по валюте: {signal.Symbol}\n" +
+                                $"Позиция: {signal.TypePosition.ToString()}");
+                            var position = await _trade.GetCurrentOpenPositionAsync(signal.Symbol);
+                            if (position != null)
+                            {
+                                var gridOrders = _trade.GetGridOrders(position);
+                                await _trade.PlaceOrders(gridOrders);
 
-                            Console.WriteLine("Поставили ордера по валюте {0}", signal.Symbol);
+                                Console.WriteLine("Поставили ордера по валюте {0}", signal.Symbol);
 
-                            await _trade.ControlOrders(signal.Symbol);
+                                await _trade.ControlOrders(signal.Symbol);
+                            }
                         }
                     }
+                    await Task.Delay((60 - DateTime.Now.Second + 1) * 1000);
                 }
-                await Task.Delay((60 - DateTime.Now.Second + 1) * 1000);
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
+
         }
 
         public async Task Start(string key, string secretKey)
