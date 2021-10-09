@@ -164,9 +164,9 @@ namespace TradeBinance
                         }
 
                     }
+                    await Task.Delay(1000);
                 }
             }
-            else { return; }
         }
        
         /// <summary>
