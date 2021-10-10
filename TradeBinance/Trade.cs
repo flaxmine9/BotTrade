@@ -33,13 +33,26 @@ namespace TradeBinance
             await _binanceInteraction.GetExchangeInformationAsync();
         }
 
-        public async Task PlaceOrders(GridOrder gridOrders)
+        public async Task<IEnumerable<BinanceFuturesPlacedOrder>> PlaceOrders(GridOrder gridOrders)
         {
             var taskPlacedStopOrders = _binanceInteraction.PlaceClosePositionOrdersAsync(gridOrders.ClosePositionOrders);
             var taskPlacedLimitOrders = _binanceInteraction.PlaceBatchesAsync(gridOrders.LimitOrders);
             
-            await taskPlacedStopOrders;
-            await taskPlacedLimitOrders;
+            var placesStopOrders = await taskPlacedStopOrders;
+            var placesLimitOrders = await taskPlacedLimitOrders;
+
+            List<BinanceFuturesPlacedOrder> placedOrders = new();
+
+            if (placesStopOrders.Any())
+            {
+                placedOrders.AddRange(placesStopOrders);
+            }
+            else if (placesLimitOrders.Any())
+            {
+                placedOrders.AddRange(placesLimitOrders);
+            }
+
+            return placedOrders;
         }
 
         public async Task SetTradeSettings(IEnumerable<string> symbols)
@@ -78,29 +91,52 @@ namespace TradeBinance
         /// </summary>
         /// <param name="positions">Текущая открытая позиция</param>
         /// <returns></returns>
-        public async Task ControlOrders(string symbol)
+        public async Task ControlOrders(IEnumerable<BinanceFuturesPlacedOrder> orders, string symbol, int delayMilliseconds)
         {
             Console.WriteLine($"{symbol}: Контролируем ордера");
 
             // По параметру передаем ордера которые поставили, вместо запроса на получение
-            IEnumerable<BinanceFuturesOrder> openCurrentOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false);
+            List<BinanceFuturesOrder> openCurrentOrders = orders.Select(x => new BinanceFuturesOrder()
+            {
+                ActivatePrice = x.ActivatePrice,
+                AvgPrice = x.AvgPrice,
+                ClientOrderId = x.ClientOrderId,
+                ClosePosition = x.ClosePosition,
+                OrderId = x.OrderId,
+                OriginalType = x.OriginalType,
+                LastFilledQuantity = x.LastFilledQuantity,
+                PositionSide = x.PositionSide,
+                Price = x.Price,
+                Quantity = x.Quantity,
+                Side = x.Side,
+                ReduceOnly = x.ReduceOnly,
+                Status = x.Status,
+                StopPrice = x.StopPrice,
+                Symbol = x.Symbol,
+                TimeInForce = x.TimeInForce,
+                QuoteQuantityFilled = x.QuoteQuantityFilled,
+                Type = x.Type,
+                QuantityFilled = x.QuantityFilled,
+                UpdateTime = x.UpdateTime,
+                WorkingType = x.WorkingType,
+            }).ToList();
 
             if (openCurrentOrders.Any())
             {
                 for (uint i = 0; i < uint.MaxValue; i++)
                 {
-                    IEnumerable<BinanceFuturesOrder> newCurrentOpenOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false);
+                    List<BinanceFuturesOrder> newCurrentOpenOrders = (await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false)).ToList();
                     if (newCurrentOpenOrders.Any())
                     {
-                        IEnumerable<BinanceFuturesOrder> exceptedOrders = openCurrentOrders.Except<BinanceFuturesOrder>(newCurrentOpenOrders, _equalityOrder);
+                        List<BinanceFuturesOrder> exceptedOrders = openCurrentOrders.Except<BinanceFuturesOrder>(newCurrentOpenOrders, _equalityOrder).ToList();
 
                         if (exceptedOrders.Any())
                         {
                             #region Выбираем Limit, StopMarket и TakeProfitMarket ордера
 
-                            IEnumerable<BinanceFuturesOrder> stopMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.StopMarket));
-                            IEnumerable<BinanceFuturesOrder> takeProfitMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.TakeProfitMarket));
-                            IEnumerable<BinanceFuturesOrder> limitOrders = exceptedOrders.Where(x => x.Type.Equals(OrderType.Limit));
+                            List<BinanceFuturesOrder> stopMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.StopMarket)).ToList();
+                            List<BinanceFuturesOrder> takeProfitMarketOrder = exceptedOrders.Where(x => x.Type.Equals(OrderType.TakeProfitMarket)).ToList();
+                            List<BinanceFuturesOrder> limitOrders = exceptedOrders.Where(x => x.Type.Equals(OrderType.Limit)).ToList();
 
                             #endregion
 
@@ -138,7 +174,7 @@ namespace TradeBinance
                                 string symbolLimit = limitOrders.First().Symbol;
                                 decimal priceLimit = limitOrders.First().Quantity > 0 ? limitOrders.Max(p => p.Price) : limitOrders.Min(p => p.Price);
 
-                                var currentStopMarket = newCurrentOpenOrders.Where(x => x.Type.Equals(OrderType.StopMarket) && x.Symbol.Equals(symbolLimit));
+                                var currentStopMarket = newCurrentOpenOrders.Where(x => x.Type.Equals(OrderType.StopMarket) && x.Symbol.Equals(symbolLimit)).ToList();
 
                                 if (newCurrentOpenOrders.Any())
                                 {
@@ -146,27 +182,31 @@ namespace TradeBinance
                                     if (cancelStopMarket)
                                     {
                                         Console.WriteLine($"{symbol}: Отменяем StopMarket по цене {currentStopMarket.First().StopPrice} $");
-                                        // Replace StopMarket Order
 
                                         var replaceStopMarketOrder = await _binanceInteraction.ReplaceStopMarketOrderAsync(currentStopMarket.First(), priceLimit, _tradeSetting.StopLoss).ConfigureAwait(false);
 
                                         if (replaceStopMarketOrder != null)
                                         {
                                             Console.WriteLine($"{symbol}: Переставляем StopMarket по новой цене {replaceStopMarketOrder.StopPrice} $");
+
+                                            openCurrentOrders = openCurrentOrders.Except(exceptedOrders, comparer: _equalityOrder).ToList();
+                                            int index = openCurrentOrders.FindIndex(0, openCurrentOrders.Count, x => x.Type.Equals(OrderType.StopMarket));
+                                            if(index != -1)
+                                            {
+                                                openCurrentOrders[index].OrderId = replaceStopMarketOrder.OrderId;
+                                            }
                                         }
                                     }
                                 }
                             }
-
-                            openCurrentOrders = await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false);
-
                             #endregion
                         }
 
                     }
-                    await Task.Delay(1000);
+                    await Task.Delay(delayMilliseconds);
                 }
             }
+            else { Console.WriteLine($"Валюта: {symbol}, нет открытых ордеров"); }
         }
        
         /// <summary>
@@ -262,6 +302,11 @@ namespace TradeBinance
 
 
             return false;
+        }
+
+        public async Task<decimal> GetBalanceAsync()
+        {
+            return await _binanceInteraction.GetBalanceAsync();
         }
     }
 }
