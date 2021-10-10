@@ -1,7 +1,6 @@
 ﻿using Binance.Models;
 using Binance.Net;
 using Binance.Net.Enums;
-using Binance.Net.Interfaces;
 using Binance.Net.Objects;
 using Binance.Net.Objects.Futures.FuturesData;
 using Binance.Net.Objects.Futures.MarketData;
@@ -21,17 +20,17 @@ namespace Binance
 
         public BinanceInteraction(string key, string secretKey)
         {
-            //_binanceClient = new BinanceClient(new BinanceClientOptions()
-            //{
-            //    ApiCredentials = new ApiCredentials(key, secretKey)
-            //});
-
-            #region TestNet Binance
-
-            _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            _binanceClient = new BinanceClient(new BinanceClientOptions()
             {
                 ApiCredentials = new ApiCredentials(key, secretKey)
             });
+
+            #region TestNet Binance
+
+            //_binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            //{
+            //    ApiCredentials = new ApiCredentials(key, secretKey)
+            //});
 
             #endregion
         }
@@ -54,10 +53,10 @@ namespace Binance
 
             if (position.Quantity > 0)
             {
-                for (int i = 0; i < 500000; i++)
+                for (uint i = 0; i < uint.MaxValue; i++)
                 {
                     var gg = quantity * position.EntryPrice;
-                    if (gg <= 10.1m)
+                    if (gg <= 5.1m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -68,9 +67,9 @@ namespace Binance
             {
                 var priceTakeProfit = position.EntryPrice / takeProfit;
 
-                for (int i = 0; i < 500000; i++)
+                for (uint i = 0; i < uint.MaxValue; i++)
                 {
-                    if (quantity * priceTakeProfit <= 10.1m)
+                    if (quantity * priceTakeProfit <= 5.1m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -83,7 +82,7 @@ namespace Binance
 
             if ((int)quantityOrders > maxOrders)
             {
-                for (int i = maxOrders; i > 2; i--)
+                for (int i = maxOrders; i >= 2; i--)
                 {
                     if ((int)quantityOrders > i && (takeProfit - 1.0m) / i > 0.0002m)
                     {
@@ -370,7 +369,7 @@ namespace Binance
             .Select(symbol => _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit))))
                 .Where(x => x.Success)
                 .Select(x => x.Data)
-                .Select((klines, numer) => klines.SkipLast(1).Select(kline => new Kline()
+                .Select((klines, numer) => klines.Select(kline => new Kline()
                 {
                     Close = kline.Close,
                     High = kline.High,
