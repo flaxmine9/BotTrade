@@ -35,38 +35,7 @@ namespace Strategy
 
         public async Task Logic()
         {
-            await _trade.SetExchangeInformationAsync();
-
-            var gridOrder = new TransformBlock<BinancePositionDetailsUsdt, GridOrder>(position =>
-            {
-                return _trade.GetGridOrders(position); 
-            });
-
-            var createOrders = new TransformBlock<GridOrder, string>(async order =>
-            {
-                await _trade.PlaceOrders(order);
-
-                return order.ClosePositionOrders.First().Symbol;
-            }, new ExecutionDataflowBlockOptions
-            {
-                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded
-            });
-
-            var controlOrders = new ActionBlock<string>(async symbol =>
-            {
-                await _trade.ControlOrders(symbol);
-            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded });
-
-            var linkOptions = new DataflowLinkOptions { PropagateCompletion = true };
-
-            bufferPositions.LinkTo(gridOrder, linkOptions);
-            gridOrder.LinkTo(createOrders, linkOptions);
-            createOrders.LinkTo(controlOrders, linkOptions);
-
-
-            var positions = ProducePosition();
-
-            await positions;
+            await Task.Delay(1);
         }
 
         public async Task Start(string key, string secretKey)
@@ -74,33 +43,6 @@ namespace Strategy
             _trade = new Trade(key, secretKey, _tradeSetting);
 
             await Logic();
-        }
-
-        public async Task ProducePosition()
-        {
-            for (uint i = 0; i < uint.MaxValue; i++)
-            {
-                IEnumerable<BinancePositionDetailsUsdt> positions = await _trade.GetCurrentOpenPositionsAsync();
-                if (!positions.Any())
-                {
-                    currentOpenPositions = new List<BinancePositionDetailsUsdt>();
-                }
-
-                var exceptedPositions = positions.Except(currentOpenPositions, comparer: equalityPosition);
-                if (exceptedPositions.Any())
-                {
-                    foreach (var position in exceptedPositions)
-                    {
-                        var openOrders = await _trade.GetOpenOrders(position.Symbol);
-                        if (!openOrders.Any())
-                        {
-                            await bufferPositions.SendAsync(position);
-                            currentOpenPositions.Add(position);
-                        }
-                    }
-                }
-                await Task.Delay(1500);
-            }
         }
     }
 }
