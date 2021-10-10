@@ -119,8 +119,6 @@ namespace Strategies
         {
             _trade = new Trade(key, secretKey, _tradeSetting);
 
-            await WaitTime();
-
             await _trade.SetExchangeInformationAsync();
             await _trade.SetTradeSettings(_superTrendSSLData.Select(x => x.Symbol));
 
