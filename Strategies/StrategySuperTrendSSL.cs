@@ -1,4 +1,5 @@
-﻿using Skender.Stock.Indicators;
+﻿using Binance.Net.Objects.Futures.FuturesData;
+using Skender.Stock.Indicators;
 using Strategies.Models;
 using Strategy.Interfaces;
 using System;
@@ -31,12 +32,19 @@ namespace Strategies
 
             _superTrendSSLData = new List<SuperTrendSSLData>()
             {
-                new SuperTrendSSLData() { Symbol = "BTCUSDT", Period = 5, ATRMultiplier = 1.0m, ATRPeriod = 5 }
+                new SuperTrendSSLData() { Symbol = "ETHUSDT", Period = 60, ATRMultiplier = 2.4m, ATRPeriod = 17 },
+                new SuperTrendSSLData() { Symbol = "BNBUSDT", Period = 75, ATRMultiplier = 4.2m, ATRPeriod = 10 },
+                new SuperTrendSSLData() { Symbol = "DOTUSDT", Period = 50, ATRMultiplier = 6.4m, ATRPeriod = 22 },
+                new SuperTrendSSLData() { Symbol = "XRPUSDT", Period = 70, ATRMultiplier = 5.0m, ATRPeriod = 10 },
+                new SuperTrendSSLData() { Symbol = "UNIUSDT", Period = 100, ATRMultiplier = 6.6m, ATRPeriod = 10 },
+                new SuperTrendSSLData() { Symbol = "LTCUSDT", Period = 60, ATRMultiplier = 4.2m, ATRPeriod = 13 }
             };
         }
 
         public async Task Logic()
         {
+            Console.WriteLine("Strategy is started!");
+
             int periodKlines = 200;
 
             for (uint i = 0; i < uint.MaxValue; i++)
@@ -48,24 +56,44 @@ namespace Strategies
 
                     if (signal != null)
                     {
+                        var balanceUSDT = await _trade.GetBalanceAsync();
+                        if (balanceUSDT <= 19.9m)
+                        {
+                            Console.WriteLine("Баланс меньше 20$\n" +
+                                $"Время: {DateTime.Now.ToUniversalTime()}");
+                            break;
+                        }
+
                         bool entriedMarket = await _trade.EntryMarket(signal.Symbol, price: signal.Price, _tradeSetting.BalanceUSDT, signal.TypePosition);
                         if (entriedMarket)
                         {
                             Console.WriteLine($"Зашли в позицию по валюте: {signal.Symbol}\n" +
-                                $"Позиция: {signal.TypePosition.ToString()}");
+                                $"Позиция: {signal.TypePosition}");
                             var position = await _trade.GetCurrentOpenPositionAsync(signal.Symbol);
                             if (position != null)
                             {
-                                var gridOrders = _trade.GetGridOrders(position);
-                                await _trade.PlaceOrders(gridOrders);
+                                GridOrder gridOrders = _trade.GetGridOrders(position);
+                                IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
+                                if (placedOrders.Any())
+                                {
+                                    Console.WriteLine("Поставили ордера по валюте {0}", signal.Symbol);
 
-                                Console.WriteLine("Поставили ордера по валюте {0}", signal.Symbol);
+                                    await _trade.ControlOrders(placedOrders, signal.Symbol, 2000);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Валюта: {signal.Symbol} -- не удалось поставить ордера, пытаем поставить заново!");
+                                    placedOrders = await _trade.PlaceOrders(gridOrders);
 
-                                await _trade.ControlOrders(signal.Symbol);
+                                    Console.WriteLine("Поставили ордера по валюте {0}", signal.Symbol);
+
+                                    await _trade.ControlOrders(placedOrders, signal.Symbol, 2000);
+                                }
                             }
                         }
                     }
-                    await Task.Delay((60 - DateTime.Now.Second + 1) * 1000);
+
+                    await WaitTime();
                 }
                 catch (Exception ex)
                 {
@@ -75,11 +103,26 @@ namespace Strategies
 
         }
 
+        private async Task WaitTime()
+        {
+            var klineForTime = await _trade.GetKlineAsync(_superTrendSSLData.First().Symbol, limit: 1);
+            if(klineForTime != null)
+            {
+                DateTime timeNow = DateTime.Now.ToUniversalTime();
+                TimeSpan waitTime = klineForTime.CloseTime.AddMilliseconds(1100) - timeNow;
+
+                await Task.Delay((int)waitTime.TotalMilliseconds);
+            }
+        }
+
         public async Task Start(string key, string secretKey)
         {
             _trade = new Trade(key, secretKey, _tradeSetting);
 
+            await WaitTime();
+
             await _trade.SetExchangeInformationAsync();
+            await _trade.SetTradeSettings(_superTrendSSLData.Select(x => x.Symbol));
 
             await Logic();
         }
@@ -88,33 +131,36 @@ namespace Strategies
         {
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
-                SuperTrendSSLData data = _superTrendSSLData.Where(x => lstKlines.First().Symbol.Equals(x.Symbol)).First();
+                List<Kline> withOutLastKline = lstKlines.SkipLast(1).ToList();
 
-                SSlValues ssl = _ssl.GetSSL(lstKlines, data.Period);
-                SuperTrendResult superTrend = _superTrend.GetSuperTrend(lstKlines, data.ATRPeriod, data.ATRMultiplier).Last();
+                SuperTrendSSLData data = _superTrendSSLData.Where(x => withOutLastKline.First().Symbol.Equals(x.Symbol)).First();
 
-                if (superTrend.LowerBand != null && lstKlines.Last().Close > superTrend.LowerBand && _ssl.CrossOverLong(ssl))
+                SSlValues ssl = _ssl.GetSSL(withOutLastKline, data.Period);
+                SuperTrendResult superTrend = _superTrend.GetSuperTrend(withOutLastKline, data.ATRPeriod, data.ATRMultiplier).Last();
+
+                if (superTrend.LowerBand != null && withOutLastKline.Last().Close > superTrend.LowerBand && _ssl.CrossOverLong(ssl))
                 {
                     Console.WriteLine($"Лонг перечесение\n" +
                         $"Время: {DateTime.Now}");
 
                     return new Position()
                     {
-                        Price = lstKlines.Last().Close,
-                        Symbol = lstKlines.Last().Symbol,
-                        TypePosition = lstKlines.Last().Close > lstKlines.Last().Open ? TypePosition.Long : TypePosition.Short
+                        Price = withOutLastKline.Last().Close,
+                        Symbol = withOutLastKline.Last().Symbol,
+                        TypePosition = withOutLastKline.Last().Close > withOutLastKline.Last().Open ? TypePosition.Long : TypePosition.Short
                     };
                 }
-                else if (superTrend.UpperBand != null && lstKlines.Last().Close < superTrend.UpperBand && _ssl.CrossOverShort(ssl))
+                else if (superTrend.UpperBand != null && withOutLastKline.Last().Close < superTrend.UpperBand && _ssl.CrossOverShort(ssl))
                 {
                     Console.WriteLine($"Шорт перечесение\n" +
                         $"Время: {DateTime.Now}");
 
                     return new Position()
                     {
-                        Price = lstKlines.Last().Close,
-                        Symbol = lstKlines.Last().Symbol,
-                        TypePosition = lstKlines.Last().Close > lstKlines.Last().Open ? TypePosition.Long : TypePosition.Short
+                        Price = withOutLastKline.Last().Close,
+                        Symbol = withOutLastKline.Last().Symbol,
+                        TypePosition = withOutLastKline.Last().Close > withOutLastKline.Last().Open ? TypePosition.Long : TypePosition.Short,
+                        CloseTime = withOutLastKline.Last().CloseTime
                     };
                 }
             }
