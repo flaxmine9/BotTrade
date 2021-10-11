@@ -1,4 +1,5 @@
-﻿using Binance.Net.Objects.Futures.FuturesData;
+﻿using Binance.Net.Enums;
+using Binance.Net.Objects.Futures.FuturesData;
 using Skender.Stock.Indicators;
 using Strategies.Models;
 using Strategy.Interfaces;
@@ -51,7 +52,7 @@ namespace Strategies
             {
                 try
                 {
-                    var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), periodKlines);
+                    var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), KlineInterval.FiveMinutes, periodKlines);
                     Position signal = GetSignal(klines);
 
                     if (signal != null)
@@ -78,7 +79,7 @@ namespace Strategies
                                 {
                                     Console.WriteLine("Поставили ордера по валюте {0}", signal.Symbol);
 
-                                    await _trade.ControlOrders(placedOrders, signal.Symbol, 2000);
+                                    await _trade.ControlOrders(placedOrders, signal.Symbol, 1000);   
                                 }
                                 else
                                 {
@@ -105,7 +106,7 @@ namespace Strategies
 
         private async Task WaitTime()
         {
-            var klineForTime = await _trade.GetKlineAsync(_superTrendSSLData.First().Symbol, limit: 1);
+            var klineForTime = await _trade.GetKlineAsync(_superTrendSSLData.First().Symbol, KlineInterval.FiveMinutes, limit: 1);
             if(klineForTime != null)
             {
                 DateTime timeNow = DateTime.Now.ToUniversalTime();
