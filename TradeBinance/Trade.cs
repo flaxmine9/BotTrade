@@ -277,14 +277,14 @@ namespace TradeBinance
             return gridOrder;
         }
 
-        public async Task<Kline> GetKlineAsync(string symbol, int limit)
+        public async Task<Kline> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
         {
-            return await _binanceInteraction.GetKlineAsync(symbol, KlineInterval.FiveMinutes, limit);
+            return await _binanceInteraction.GetKlineAsync(symbol, klineInterval, limit);
         }
 
-        public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, int limit)
+        public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, int limit)
         {
-            return await _binanceInteraction.GetKlinesAsync(symbols, KlineInterval.OneMinute, limit: limit);
+            return await _binanceInteraction.GetKlinesAsync(symbols, klineInterval, limit: limit);
         }
 
         public async Task<bool> EntryMarket(string symbol, decimal price, decimal balanceUSDT, TypePosition typePosition)
