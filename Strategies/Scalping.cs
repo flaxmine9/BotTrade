@@ -1,4 +1,5 @@
-﻿using Strategies.Models;
+﻿using Binance.Net.Enums;
+using Strategies.Models;
 using Strategy.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -53,7 +54,7 @@ namespace Strategies
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                IEnumerable<IEnumerable<Kline>> klines = await _trade.GetLstKlinesAsync(_symbols, limit: 3);
+                IEnumerable<IEnumerable<Kline>> klines = await _trade.GetLstKlinesAsync(_symbols, KlineInterval.FiveMinutes, limit: 3);
 
                 List<Kline> klinesPumps = CheckPumpVolumesAsync(klines).ToList();
                 if (klinesPumps.Any())
@@ -80,7 +81,7 @@ namespace Strategies
 
                                 await _trade.ControlOrders(placedOrders, randomKlinePump.Symbol, 100);
 
-                                var klineForTime = await _trade.GetKlineAsync(randomKlinePump.Symbol, limit: 1);
+                                var klineForTime = await _trade.GetKlineAsync(randomKlinePump.Symbol, KlineInterval.FiveMinutes, limit: 1);
 
                                 if (klineForTime != null)
                                 {
