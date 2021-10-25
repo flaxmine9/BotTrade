@@ -1,5 +1,7 @@
-﻿using Strategy.Interfaces;
+﻿using DataBase;
+using Strategy.Interfaces;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FlaxTrade
@@ -8,11 +10,17 @@ namespace FlaxTrade
     {
         private ApiSetting _apiSetting { get; set; }
         private List<IStrategy> _strategies { get; set; }
+        private ApplicationContext _dataBase { get; set; }
+        private string NameUser { get; set; }
 
-        public Client(ApiSetting apiSetting)
+        public Client(string nameUser, ApiSetting apiSetting, ApplicationContext dataBase)
         {
             _apiSetting = apiSetting;
-            _strategies = new List<IStrategy>();
+            NameUser = nameUser;
+
+            _dataBase = dataBase;
+
+            _strategies = new();
         }
 
         public void AddStrategy(IStrategy strategy)
@@ -22,9 +30,16 @@ namespace FlaxTrade
 
         public void StartStrategies()
         {
+            var isAny = _dataBase.Users.Where(x => x.Name.Equals(NameUser)).ToList().Any();
+            if (!isAny)
+            {
+                _dataBase.Users.Add(new DataBase.Models.User() { Name = NameUser, TelegramUserId = 0 });
+                _dataBase.SaveChanges();
+            }
+
             foreach (IStrategy strategy in _strategies)
             {
-                new Task(() => strategy.Start(_apiSetting.Key, _apiSetting.SecretKey)).Start();
+                new Task(() => strategy.Start(NameUser, _apiSetting.Key, _apiSetting.SecretKey, _dataBase)).Start();
             }
         }
     }
