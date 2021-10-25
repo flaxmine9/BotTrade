@@ -1,4 +1,5 @@
 ﻿using Binance.Net.Enums;
+using DataBase;
 using Strategies.Models;
 using Strategy.Interfaces;
 using System;
@@ -66,8 +67,8 @@ namespace Strategies
 
                     TypePosition typePosition = randomKlinePump.Close > randomKlinePump.Open ? TypePosition.Long : TypePosition.Short;
 
-                    bool entriedMarket = await _trade.EntryMarket(randomKlinePump.Symbol, price: randomKlinePump.Close, _tradeSetting.BalanceUSDT, typePosition);
-                    if (entriedMarket)
+                    string entriedMarket = await _trade.EntryMarket(randomKlinePump.Symbol, price: randomKlinePump.Close, _tradeSetting.BalanceUSDT, typePosition);
+                    if (entriedMarket != null)
                     {
                         Console.WriteLine("Зашли в позицию по валюте: {0}", randomKlinePump.Symbol);
                         var position = await _trade.GetCurrentOpenPositionAsync(randomKlinePump.Symbol);
@@ -79,7 +80,7 @@ namespace Strategies
                             {
                                 Console.WriteLine("Поставили ордера по валюте {0}", randomKlinePump.Symbol);
 
-                                await _trade.ControlOrders(placedOrders, randomKlinePump.Symbol, 100);
+                                await _trade.ControlOrders(placedOrders, 100);
 
                                 var klineForTime = await _trade.GetKlineAsync(randomKlinePump.Symbol, KlineInterval.FiveMinutes, limit: 1);
 
@@ -104,7 +105,7 @@ namespace Strategies
 
                                 Console.WriteLine("Поставили ордера по валюте {0}", randomKlinePump.Symbol);
 
-                                await _trade.ControlOrders(placedOrders, randomKlinePump.Symbol, 100);
+                                await _trade.ControlOrders(placedOrders, 100);
                             }
                         }
                         else { Console.WriteLine($"Валюта: {randomKlinePump.Symbol} -- Не удалось получить позицию"); }
@@ -114,7 +115,7 @@ namespace Strategies
         }
 
 
-        public async Task Start(string key, string secretKey)
+        public async Task Start(string nameUser,  string key, string secretKey, ApplicationContext dataBase)
         {
             _trade = new Trade(key, secretKey, _tradeSetting);
 
