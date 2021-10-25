@@ -20,17 +20,17 @@ namespace Binance
 
         public BinanceInteraction(string key, string secretKey)
         {
-            //_binanceClient = new BinanceClient(new BinanceClientOptions()
-            //{
-            //    ApiCredentials = new ApiCredentials(key, secretKey)
-            //});
-
-            #region TestNet Binance
-
-            _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            _binanceClient = new BinanceClient(new BinanceClientOptions()
             {
                 ApiCredentials = new ApiCredentials(key, secretKey)
             });
+
+            #region TestNet Binance
+
+            //_binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            //{
+            //    ApiCredentials = new ApiCredentials(key, secretKey)
+            //});
 
             #endregion
         }
@@ -43,64 +43,6 @@ namespace Binance
         /// <param name="position">Текущая открытая позиция</param>
         /// <param name="takeProfit">Профит</param>
         /// <returns>Минимальное количество валюты за один ордер</returns>
-        //public OrderInfo CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
-        //{
-        //    OrderInfo orderInfo = new OrderInfo();
-        //    int realyQuantityOrder = 0;
-
-        //    var echange = GetInfo(position.Symbol);
-        //    var quantity = echange.LotSizeFilter.MinQuantity;
-
-        //    if (position.Quantity > 0)
-        //    {
-        //        for (uint i = 0; i < uint.MaxValue; i++)
-        //        {
-        //            var gg = quantity * position.EntryPrice;
-        //            if (gg <= 10.05m)
-        //            {
-        //                quantity += echange.LotSizeFilter.MinQuantity;
-        //            }
-        //            else { break; }
-        //        }
-        //    }
-        //    else
-        //    {
-        //        var priceTakeProfit = position.EntryPrice / takeProfit;
-
-        //        for (uint i = 0; i < uint.MaxValue; i++)
-        //        {
-        //            if (quantity * priceTakeProfit <= 10.05m)
-        //            {
-        //                quantity += echange.LotSizeFilter.MinQuantity;
-        //            }
-        //            else { break; }
-        //        }
-        //    }
-
-        //    var quantityOrders = Math.Abs(position.Quantity) / quantity;
-        //    quantityOrders -= quantityOrders % 0.1m;
-
-        //    if ((int)quantityOrders > maxOrders)
-        //    {
-        //        for (int i = maxOrders; i >= 2; i--)
-        //        {
-        //            if ((int)quantityOrders > i && (takeProfit - 1.0m) / i > 0.0002m)
-        //            {
-        //                var quantityRazdelNa15Order = Math.Abs(position.Quantity) / i;
-        //                quantityRazdelNa15Order -= quantityRazdelNa15Order % echange.LotSizeFilter.MinQuantity;
-
-        //                quantity = quantityRazdelNa15Order;
-
-        //                return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = i };
-        //            }
-        //        }
-        //    }
-
-        //    realyQuantityOrder = (int)quantityOrders;
-
-        //    return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = realyQuantityOrder };
-        //}
-
         public OrderInfo CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
         {
             OrderInfo orderInfo = new OrderInfo();
@@ -115,7 +57,7 @@ namespace Binance
                 for (uint i = 0; i < uint.MaxValue; i++)
                 {
                     var gg = quantity * position.EntryPrice;
-                    if (gg <= 10.05m)
+                    if (gg <= 5.05m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -128,7 +70,7 @@ namespace Binance
 
                 for (uint i = 0; i < uint.MaxValue; i++)
                 {
-                    if (quantity * priceTakeProfit <= 10.05m)
+                    if (quantity * priceTakeProfit <= 5.05m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -153,7 +95,7 @@ namespace Binance
             // quantityForOneLimitOrder количество на один лимитный ордер
 
             // распределяем 65% количества монет на 3 ордера, а 35% на оставишеся ордера (maxOrder - 3)
-            decimal halfQuantityOfPosition = Math.Abs(position.Quantity) * 0.7m;
+            decimal halfQuantityOfPosition = Math.Abs(position.Quantity) * 0.6m;
             halfQuantityOfPosition -= halfQuantityOfPosition % echange.LotSizeFilter.MinQuantity;
 
             decimal ostatolQuantityOfPosition = Math.Abs(position.Quantity) - halfQuantityOfPosition;
