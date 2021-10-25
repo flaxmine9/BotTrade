@@ -20,17 +20,17 @@ namespace Binance
 
         public BinanceInteraction(string key, string secretKey)
         {
-            _binanceClient = new BinanceClient(new BinanceClientOptions()
-            {
-                ApiCredentials = new ApiCredentials(key, secretKey)
-            });
-
-            #region TestNet Binance
-
-            //_binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            //_binanceClient = new BinanceClient(new BinanceClientOptions()
             //{
             //    ApiCredentials = new ApiCredentials(key, secretKey)
             //});
+
+            #region TestNet Binance
+
+            _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+            {
+                ApiCredentials = new ApiCredentials(key, secretKey)
+            });
 
             #endregion
         }
@@ -43,10 +43,69 @@ namespace Binance
         /// <param name="position">Текущая открытая позиция</param>
         /// <param name="takeProfit">Профит</param>
         /// <returns>Минимальное количество валюты за один ордер</returns>
+        //public OrderInfo CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
+        //{
+        //    OrderInfo orderInfo = new OrderInfo();
+        //    int realyQuantityOrder = 0;
+
+        //    var echange = GetInfo(position.Symbol);
+        //    var quantity = echange.LotSizeFilter.MinQuantity;
+
+        //    if (position.Quantity > 0)
+        //    {
+        //        for (uint i = 0; i < uint.MaxValue; i++)
+        //        {
+        //            var gg = quantity * position.EntryPrice;
+        //            if (gg <= 10.05m)
+        //            {
+        //                quantity += echange.LotSizeFilter.MinQuantity;
+        //            }
+        //            else { break; }
+        //        }
+        //    }
+        //    else
+        //    {
+        //        var priceTakeProfit = position.EntryPrice / takeProfit;
+
+        //        for (uint i = 0; i < uint.MaxValue; i++)
+        //        {
+        //            if (quantity * priceTakeProfit <= 10.05m)
+        //            {
+        //                quantity += echange.LotSizeFilter.MinQuantity;
+        //            }
+        //            else { break; }
+        //        }
+        //    }
+
+        //    var quantityOrders = Math.Abs(position.Quantity) / quantity;
+        //    quantityOrders -= quantityOrders % 0.1m;
+
+        //    if ((int)quantityOrders > maxOrders)
+        //    {
+        //        for (int i = maxOrders; i >= 2; i--)
+        //        {
+        //            if ((int)quantityOrders > i && (takeProfit - 1.0m) / i > 0.0002m)
+        //            {
+        //                var quantityRazdelNa15Order = Math.Abs(position.Quantity) / i;
+        //                quantityRazdelNa15Order -= quantityRazdelNa15Order % echange.LotSizeFilter.MinQuantity;
+
+        //                quantity = quantityRazdelNa15Order;
+
+        //                return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = i };
+        //            }
+        //        }
+        //    }
+
+        //    realyQuantityOrder = (int)quantityOrders;
+
+        //    return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = realyQuantityOrder };
+        //}
+
         public OrderInfo CalculateQuantity(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
         {
             OrderInfo orderInfo = new OrderInfo();
-            int realyQuantityOrder = 0;
+
+            int quantityRaspredelenieOnOrders = 3;
 
             var echange = GetInfo(position.Symbol);
             var quantity = echange.LotSizeFilter.MinQuantity;
@@ -56,7 +115,7 @@ namespace Binance
                 for (uint i = 0; i < uint.MaxValue; i++)
                 {
                     var gg = quantity * position.EntryPrice;
-                    if (gg <= 5.1m)
+                    if (gg <= 10.05m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -69,7 +128,7 @@ namespace Binance
 
                 for (uint i = 0; i < uint.MaxValue; i++)
                 {
-                    if (quantity * priceTakeProfit <= 5.1m)
+                    if (quantity * priceTakeProfit <= 10.05m)
                     {
                         quantity += echange.LotSizeFilter.MinQuantity;
                     }
@@ -77,28 +136,78 @@ namespace Binance
                 }
             }
 
+            // всего количество ордеров
             var quantityOrders = Math.Abs(position.Quantity) / quantity;
             quantityOrders -= quantityOrders % 0.1m;
 
-            if ((int)quantityOrders > maxOrders)
+            decimal quantityForOneLimitOrder = 0.0m;
+            List<decimal> quantitiesLst = new();
+
+            // Проверяем разницу между ордерами. Разница должна быть больше, чем комиссия (0.02%)
+            if (quantityOrders > maxOrders)
             {
-                for (int i = maxOrders; i >= 2; i--)
+                quantityOrders = maxOrders;
+            }
+
+            // теперь maxOrders равен количеству при разници между ордерами больше комиссии
+            // quantityForOneLimitOrder количество на один лимитный ордер
+
+            // распределяем 65% количества монет на 3 ордера, а 35% на оставишеся ордера (maxOrder - 3)
+            decimal halfQuantityOfPosition = Math.Abs(position.Quantity) * 0.7m;
+            halfQuantityOfPosition -= halfQuantityOfPosition % echange.LotSizeFilter.MinQuantity;
+
+            decimal ostatolQuantityOfPosition = Math.Abs(position.Quantity) - halfQuantityOfPosition;
+            ostatolQuantityOfPosition -= ostatolQuantityOfPosition % echange.LotSizeFilter.MinQuantity;
+
+            decimal halfQuantityDelOn3Order = halfQuantityOfPosition / quantityRaspredelenieOnOrders;
+            halfQuantityDelOn3Order -= halfQuantityDelOn3Order % echange.LotSizeFilter.MinQuantity;
+
+            for (int i = 0; i < 2; i++)
+            {
+                if (halfQuantityDelOn3Order < quantity)
                 {
-                    if ((int)quantityOrders > i && (takeProfit - 1.0m) / i > 0.0002m)
-                    {
-                        var quantityRazdelNa15Order = Math.Abs(position.Quantity) / i;
-                        quantityRazdelNa15Order -= quantityRazdelNa15Order % echange.LotSizeFilter.MinQuantity;
-
-                        quantity = quantityRazdelNa15Order;
-
-                        return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = i };
-                    }
+                    quantityRaspredelenieOnOrders -= 1;
+                    halfQuantityDelOn3Order = halfQuantityOfPosition / quantityRaspredelenieOnOrders;
+                }
+                else 
+                {
+                    break; 
                 }
             }
 
-            realyQuantityOrder = (int)quantityOrders;
+            halfQuantityDelOn3Order -= halfQuantityDelOn3Order % echange.LotSizeFilter.MinQuantity;
 
-            return new OrderInfo() { QuantityAsset = quantity, QuantityOrders = realyQuantityOrder };
+            for (int i = 0; i < quantityRaspredelenieOnOrders; i++)
+            {
+                quantitiesLst.Add(halfQuantityDelOn3Order);
+            }
+            quantityOrders -= quantityRaspredelenieOnOrders;
+
+            for (int i = (int)quantityOrders; i >= 1; i++)
+            {
+                if ((takeProfit - 1.0m) / quantityOrders < 0.0002m)
+                {
+                    quantityOrders -= 1;
+                }
+                else
+                {
+                    quantityForOneLimitOrder = ostatolQuantityOfPosition / quantityOrders;
+                    quantityForOneLimitOrder -= quantityForOneLimitOrder % echange.LotSizeFilter.MinQuantity;
+
+                    if(quantityForOneLimitOrder >= quantity)
+                    {
+                        break;
+                    }
+                    else { quantityOrders -= 1; }
+                }
+            }
+
+            for (int i = 0; i < (int)quantityOrders; i++)
+            {
+                quantitiesLst.Add(quantityForOneLimitOrder);
+            }
+
+            return new OrderInfo() { QuantitiesAsset = quantitiesLst, QuantityOrders = quantitiesLst.Count };
         }
 
         /// <summary>
@@ -131,9 +240,7 @@ namespace Binance
         {
             if (quantityOrders != 0)
             {
-                var percentBetweenOrders = (profit - 1) / quantityOrders;
-
-                return (percentBetweenOrders - percentBetweenOrders % 0.0001m);
+                return (profit - 1) / quantityOrders;
             }
 
             return 0;
@@ -187,14 +294,20 @@ namespace Binance
         #region Операции с ордерами
 
 
-        /// <summary>
-        /// Получаем все текущие ордера по указанной валюте
-        /// </summary>
-        /// <param name="symbol">Валюта</param>
-        /// <returns>Ордера</returns>
+        public async Task<IEnumerable<BinanceFuturesUsdtTrade>> GetTradeHistory(string symbol, DateTime startTime, int limit)
+        {
+            var result = await _binanceClient.FuturesUsdt.Order.GetUserTradesAsync(symbol, startTime, limit: limit, receiveWindow: 15000);
+            if (result.Success)
+            {
+                return result.Data;
+            }
+            return new List<BinanceFuturesUsdtTrade>();
+        }
+
+        
         public async Task<IEnumerable<BinanceFuturesOrder>> GetCurrentOpenOrdersAsync(string symbol)
         {
-            var openOrders = await _binanceClient.FuturesUsdt.Order.GetOpenOrdersAsync(symbol);
+            var openOrders = await _binanceClient.FuturesUsdt.Order.GetOpenOrdersAsync(symbol, receiveWindow: 15000);
             if (openOrders.Success)
             {
                 return openOrders.Data;
@@ -210,7 +323,7 @@ namespace Binance
         /// <returns>Результат отмены</returns>
         public async Task<bool> CancelOpenOrders(string symbol)
         {
-            var canceled = await _binanceClient.FuturesUsdt.Order.CancelAllOrdersAsync(symbol);
+            var canceled = await _binanceClient.FuturesUsdt.Order.CancelAllOrdersAsync(symbol, receiveWindow: 15000);
             if (canceled.Success)
             {
                 return true;
@@ -230,7 +343,8 @@ namespace Binance
                 .GroupBy(x => x.Index / 5)
                 .Select(x => x.Select(v => v.Value).ToArray());
 
-            var placedOrders = (await Task.WhenAll(batchesFive.Select(x => _binanceClient.FuturesUsdt.Order.PlaceMultipleOrdersAsync(x))))
+            var placedOrders = (await Task.WhenAll(batchesFive.Select(x => _binanceClient.FuturesUsdt.Order.PlaceMultipleOrdersAsync(x, receiveWindow: 15000))))
+                .Where(x => x.Success)
                 .SelectMany(x => x.Data).Select(x => x.Data);
 
             return placedOrders;
@@ -243,7 +357,8 @@ namespace Binance
         /// <returns></returns>
         public async Task<IEnumerable<BinanceFuturesPlacedOrder>> PlaceClosePositionOrdersAsync(IEnumerable<BinanceFuturesPlacedOrder> orders)
         {
-            var resultOrders = (await Task.WhenAll(orders.Select(x => _binanceClient.FuturesUsdt.Order.PlaceOrderAsync(x.Symbol, x.Side, x.Type, quantity: x.Quantity, stopPrice: x.StopPrice, closePosition: x.ClosePosition))))
+            var resultOrders = (await Task.WhenAll(orders
+                .Select(x => _binanceClient.FuturesUsdt.Order.PlaceOrderAsync(x.Symbol, x.Side, x.Type, quantity: x.Quantity, stopPrice: x.StopPrice, closePosition: x.ClosePosition, receiveWindow: 15000))))
                 .Select(x => x.Data);
 
             return resultOrders;
@@ -269,7 +384,7 @@ namespace Binance
             stopPrice -= stopPrice % exchange.PriceFilter.TickSize;
 
             var res = await _binanceClient.FuturesUsdt.Order.PlaceOrderAsync(stopMarketOrder.Symbol, stopMarketOrder.Side,
-                stopMarketOrder.Type, Math.Abs(stopMarketOrder.Quantity), stopPrice: stopPrice, closePosition: true);
+                stopMarketOrder.Type, Math.Abs(stopMarketOrder.Quantity), stopPrice: stopPrice, closePosition: true, receiveWindow: 15000);
 
             if (res.Success)
             {
@@ -285,7 +400,7 @@ namespace Binance
         /// <returns></returns>
         public async Task<bool> CancelOrder(BinanceFuturesOrder order)
         {
-            var res = await _binanceClient.FuturesUsdt.Order.CancelOrderAsync(order.Symbol, order.OrderId);
+            var res = await _binanceClient.FuturesUsdt.Order.CancelOrderAsync(order.Symbol, order.OrderId, receiveWindow: 15000);
             if (res.Success)
             {
                 return true;
@@ -348,7 +463,7 @@ namespace Binance
         /// <returns>Открытая позиция</returns>
         public async Task<BinancePositionDetailsUsdt> GetCurrentOpenPositionAsync(string symbol)
         {
-            var position = await _binanceClient.FuturesUsdt.GetPositionInformationAsync(symbol);
+            var position = await _binanceClient.FuturesUsdt.GetPositionInformationAsync(symbol, receiveWindow: 15000);
             if (position.Success)
             {
                 return position.Data.First();
@@ -421,7 +536,7 @@ namespace Binance
         /// <returns>Баланс</returns>
         public async Task<decimal> GetBalanceAsync()
         {
-            var balance = await _binanceClient.FuturesUsdt.Account.GetBalanceAsync();
+            var balance = await _binanceClient.FuturesUsdt.Account.GetBalanceAsync(receiveWindow: 15000);
             if (balance.Success)
             {
                 return balance.Data.Where(x => x.Asset.Equals("USDT")).First().AvailableBalance;
