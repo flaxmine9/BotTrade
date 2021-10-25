@@ -14,7 +14,7 @@ namespace DataBase
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=binanceDB;Username=postgres;Password=1234");
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=binanceTest;Username=postgres;Password=1234");
         }
     }
 }
