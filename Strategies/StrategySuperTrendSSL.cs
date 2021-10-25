@@ -259,7 +259,7 @@ namespace Strategies
             {
                 BinancePositionDetailsUsdt position = null;
 
-                //Console.WriteLine($"Валюта: {symbol} -- Пытаем получить 5 раз текущую позицию");
+                Console.WriteLine($"Валюта: {symbol} -- Пытаем получить 5 раз текущую позицию");
 
                 for (int i = 0; i < 5; i++)
                 {
@@ -273,7 +273,7 @@ namespace Strategies
                     }
                 }
 
-                //Console.WriteLine($"Валюта: {symbol} -- Не удалось получить текущую позицию за 5 попыток");
+                Console.WriteLine($"Валюта: {symbol} -- Не удалось получить текущую позицию за 5 попыток");
 
                 return position;
 
@@ -294,7 +294,7 @@ namespace Strategies
                     IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
                     if (placedOrders.Any())
                     {
-                        //Console.WriteLine($"Валюта: {placedOrders.First().Symbol} -- Поставили failed orders");
+                        Console.WriteLine($"Валюта: {placedOrders.First().Symbol} -- Поставили failed orders");
 
                         lst.AddRange(placedOrders);
 
@@ -302,7 +302,7 @@ namespace Strategies
                     }
                 }
 
-                //Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Не удалось выставить ордера за 5 попыток");
+                Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Не удалось выставить ордера за 5 попыток");
 
                 return lst;
 
@@ -314,18 +314,18 @@ namespace Strategies
 
             var tryExecuteFailedEntryMarket = new TransformBlock<Signal, string>(async signal =>
             {
-                // Console.WriteLine($"Валюта: {signal.Symbol} -- Пытаем зайти в рынок 5 раз");
+                Console.WriteLine($"Валюта: {signal.Symbol} -- Пытаем зайти в рынок 5 раз");
                 for (int i = 0; i < 5; i++)
                 {
                     string entriedMarket = await _trade.EntryMarket(signal.Symbol, price: signal.Price, _tradeSetting.BalanceUSDT, signal.TypePosition);
                     if (entriedMarket != null)
                     {
-                        //Console.WriteLine($"Валюта: {signal.Symbol} -- Зашли в failed entry market");
+                        Console.WriteLine($"Валюта: {signal.Symbol} -- Зашли в failed entry market");
                         return entriedMarket;
                     }
                 }
 
-                //Console.WriteLine($"Валюта: {signal.Symbol} -- Не удалось зайти в рынок за 5 попыток");
+                Console.WriteLine($"Валюта: {signal.Symbol} -- Не удалось зайти в рынок за 5 попыток");
 
                 return null;
 
