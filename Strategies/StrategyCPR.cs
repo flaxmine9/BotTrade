@@ -8,6 +8,7 @@ using Binance.Net.Objects.Futures.FuturesData;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using DataBase;
 
 namespace Strategy
 {
@@ -38,7 +39,7 @@ namespace Strategy
             await Task.Delay(1);
         }
 
-        public async Task Start(string key, string secretKey)
+        public async Task Start(string nameUser, string key, string secretKey, ApplicationContext dataBase)
         {
             _trade = new Trade(key, secretKey, _tradeSetting);
 

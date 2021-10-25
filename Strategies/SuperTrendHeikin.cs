@@ -8,6 +8,8 @@ using TechnicalIndicator.Models;
 using TradeBinance;
 using System.Threading.Tasks.Dataflow;
 using TechnicalIndicator.Trend;
+using Strategies.Models;
+using DataBase;
 
 namespace Strategies
 {
@@ -35,7 +37,7 @@ namespace Strategies
             await Task.Delay(1);
         }
 
-        public async Task Start(string key, string secretKey)
+        public async Task Start(string nameUser, string key, string secretKey, ApplicationContext dataBase)
         {
             _trade = new Trade(key, secretKey, _tradeSetting);
 
