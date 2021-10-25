@@ -1,6 +1,8 @@
 ﻿using DataBase;
+using DataBase.Models;
 using Strategies;
 using System;
+using System.Linq;
 using TradeBinance;
 
 namespace FlaxTrade
@@ -14,6 +16,17 @@ namespace FlaxTrade
 
             db.Users.Add(new DataBase.Models.User() { Name = "kirill", TelegramUserId = 0 });
             db.SaveChanges();
+
+            using (ApplicationContext db2 = new ApplicationContext())
+            {
+                // получаем объекты из бд и выводим на консоль
+                var users = db.Users.ToList();
+                Console.WriteLine("Users list:");
+                foreach (User u in users)
+                {
+                    Console.WriteLine($"{u.Id}.{u.Name}");
+                }
+            }
 
             Console.WriteLine("Данные сохранены!");
 
