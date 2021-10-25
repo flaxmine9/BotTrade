@@ -21,6 +21,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Strategies", "Strategies\St
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradeBinance", "TradeBinance\TradeBinance.csproj", "{34BC6725-B02B-4912-83FA-719B7E191D92}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataBase", "DataBase", "{8AB48B9E-6FB5-4252-BCF0-9EFD2485CF43}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataBase", "DataBase\DataBase.csproj", "{9541C55D-A346-4D8A-B1D4-201341C98DC0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +51,10 @@ Global
 		{34BC6725-B02B-4912-83FA-719B7E191D92}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34BC6725-B02B-4912-83FA-719B7E191D92}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34BC6725-B02B-4912-83FA-719B7E191D92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9541C55D-A346-4D8A-B1D4-201341C98DC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9541C55D-A346-4D8A-B1D4-201341C98DC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9541C55D-A346-4D8A-B1D4-201341C98DC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9541C55D-A346-4D8A-B1D4-201341C98DC0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,6 +64,7 @@ Global
 		{FEF29697-C220-49ED-A9EF-9BE675B0E452} = {F8DE471B-7E9C-4A1F-8895-9391E1712E15}
 		{8170223E-8B2E-4AE9-BBBD-C4672E1CD957} = {7C369EB7-D246-4342-B904-1FD693651D6D}
 		{34BC6725-B02B-4912-83FA-719B7E191D92} = {56502D85-EBF2-4935-A622-BAA3BBADECB2}
+		{9541C55D-A346-4D8A-B1D4-201341C98DC0} = {8AB48B9E-6FB5-4252-BCF0-9EFD2485CF43}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {60272E2E-EB78-4BB9-BEEF-34B705A532B3}

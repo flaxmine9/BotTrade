@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DataBase\DataBase.csproj" />
     <ProjectReference Include="..\Strategies\Strategies.csproj" />
     <ProjectReference Include="..\TechnicalIndicator\TechnicalIndicator.csproj" />
     <ProjectReference Include="..\TradeBinance\TradeBinance.csproj" />
