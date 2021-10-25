@@ -168,7 +168,7 @@ namespace Strategies
 
                         if (await _bufferFirstFinishedOrder.SendAsync(minTimeOrder))
                         {
-                            Console.WriteLine($"User: {_nameUser} -- Передали ордер в буфер");
+                            Console.WriteLine($"User: {_nameUser} -- Передали ордера в буфер");
                         }
 
                         return finishedOrders.First().Symbol;
@@ -493,7 +493,7 @@ namespace Strategies
                                                 {
                                                     _runningPositions.Add(signal);
 
-                                                    //Console.WriteLine($"User: {_nameUser}, добавили позицию {signal.Symbol} в список -- {DateTime.Now.ToUniversalTime()}");
+                                                    Console.WriteLine($"User: {_nameUser}, добавили позицию {signal.Symbol} в список -- {DateTime.Now.ToUniversalTime()}");
                                                     Console.WriteLine($"Количество активных позиций {_nameUser}: {_runningPositions.Count}");
                                                 }
 
