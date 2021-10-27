@@ -56,7 +56,11 @@ namespace Strategies
                 new SuperTrendSSLData() { Symbol = "BNBUSDT", Period = 75, ATRMultiplier = 4.2m, ATRPeriod = 10 },
                 new SuperTrendSSLData() { Symbol = "DOTUSDT", Period = 50, ATRMultiplier = 6.4m, ATRPeriod = 22 },
                 new SuperTrendSSLData() { Symbol = "XRPUSDT", Period = 70, ATRMultiplier = 5.0m, ATRPeriod = 10 },
-                new SuperTrendSSLData() { Symbol = "LTCUSDT", Period = 60, ATRMultiplier = 4.2m, ATRPeriod = 13 }
+                new SuperTrendSSLData() { Symbol = "LTCUSDT", Period = 60, ATRMultiplier = 4.2m, ATRPeriod = 13 },
+                new SuperTrendSSLData() { Symbol = "LINKUSDT", Period = 85, ATRMultiplier = 4.0m, ATRPeriod = 27 },
+                new SuperTrendSSLData() { Symbol = "FLMUSDT", Period = 90, ATRMultiplier = 6.4m, ATRPeriod = 10 },
+                new SuperTrendSSLData() { Symbol = "FTMUSDT", Period = 60, ATRMultiplier = 5.2m, ATRPeriod = 30 },
+                new SuperTrendSSLData() { Symbol = "LUNAUSDT", Period = 75, ATRMultiplier = 5.6m, ATRPeriod = 29 }
             };
 
             _bufferPositions = new();
@@ -395,7 +399,7 @@ namespace Strategies
 
         private async Task WaitTime()
         {
-            var klineForTime = await _trade.GetKlineAsync(_superTrendSSLData.First().Symbol, KlineInterval.OneMinute, limit: 1);
+            var klineForTime = await _trade.GetKlineAsync(_superTrendSSLData.First().Symbol, (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
             if (klineForTime != null)
             {
                 DateTime timeNow = DateTime.Now.ToUniversalTime();
@@ -471,7 +475,7 @@ namespace Strategies
                 {
                     if (_runningPositions.Count != maxPositions)
                     {
-                        var klines = await _trade.GetLstKlinesAsync(data.Select(x => x.Symbol), KlineInterval.OneMinute, periodKlines);
+                        var klines = await _trade.GetLstKlinesAsync(data.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, periodKlines);
                         IEnumerable<Signal> signals = GetSignals(klines);
 
                         if (signals.Any())
