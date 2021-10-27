@@ -1,8 +1,6 @@
 ﻿using DataBase;
-using DataBase.Models;
 using Strategies;
 using System;
-using System.Linq;
 using TradeBinance;
 
 namespace FlaxTrade
@@ -19,7 +17,7 @@ namespace FlaxTrade
             Client client = new Client("kirill", new ApiSetting() { Key = keyKirill, SecretKey = secretKeyKirill }, db);
             client.AddStrategy(new StrategySuperTrendSSL
                 (
-                   new TradeSetting(takeProfit: 1.02m, stopLoss: 1.01m, leverage: 7, futuresMarginType: "Isolated",
+                   new TradeSetting(TimeFrame.FiveMinutes, takeProfit: 1.02m, stopLoss: 1.01m, leverage: 7, futuresMarginType: "Isolated",
                         maxOrders: 10, balanceUSDT: 15.0m, maxPositions: 2)
                 ));
 
