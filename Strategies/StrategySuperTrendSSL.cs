@@ -59,7 +59,7 @@ namespace Strategies
                 new SuperTrendSSLData() { Symbol = "LTCUSDT", Period = 60, ATRMultiplier = 4.2m, ATRPeriod = 13 },
                 new SuperTrendSSLData() { Symbol = "LINKUSDT", Period = 85, ATRMultiplier = 4.0m, ATRPeriod = 27 },
                 new SuperTrendSSLData() { Symbol = "FLMUSDT", Period = 90, ATRMultiplier = 6.4m, ATRPeriod = 10 },
-                new SuperTrendSSLData() { Symbol = "FTMUSDT", Period = 60, ATRMultiplier = 5.2m, ATRPeriod = 30 },
+                //new SuperTrendSSLData() { Symbol = "FTMUSDT", Period = 60, ATRMultiplier = 5.2m, ATRPeriod = 30 },
                 new SuperTrendSSLData() { Symbol = "LUNAUSDT", Period = 75, ATRMultiplier = 5.6m, ATRPeriod = 29 }
             };
 
@@ -85,6 +85,7 @@ namespace Strategies
                 string entriedMarket = await _trade.EntryMarket(signal.Symbol, price: signal.Price, _tradeSetting.BalanceUSDT, signal.TypePosition);
                 if (entriedMarket != null)
                 {
+                    Console.WriteLine($"User: {_nameUser} -- Зашли по рынку по монете {signal.Symbol}");
                     return entriedMarket;
                 }
                 else
@@ -104,6 +105,7 @@ namespace Strategies
                 var resultPosition = await _trade.GetCurrentOpenPositionAsync(symbol);
                 if (resultPosition != null)
                 {
+                    Console.WriteLine($"User: {_nameUser} -- Получили позицию по монете {symbol}");
                     return resultPosition;
                 }
                 else
@@ -144,6 +146,8 @@ namespace Strategies
                 if (placedOrders.Any())
                 {
                     lst.AddRange(placedOrders);
+
+                    Console.WriteLine($"User: {_nameUser} -- Поставили ордера по монете {lst.First().Symbol}");
                 }
                 else
                 {
@@ -162,9 +166,9 @@ namespace Strategies
 
             var contollOrders = new TransformBlock<IEnumerable<BinanceFuturesPlacedOrder>, string>(async placedOrders =>
             {
-                if (placedOrders.Any())
+                try
                 {
-                    IEnumerable<BinanceFuturesOrder> finishedOrders = await _trade.ControlOrders(placedOrders, 500);
+                    IEnumerable<BinanceFuturesOrder> finishedOrders = await _trade.ControlOrders(placedOrders, 1000);
                     if (finishedOrders.Any())
                     {
                         Console.WriteLine($"User: {_nameUser} -- выполнились ордера по валюте: {finishedOrders.First().Symbol}");
@@ -177,9 +181,15 @@ namespace Strategies
 
                         return finishedOrders.First().Symbol;
                     }
+
+                    return "";
+                }
+                catch (Exception ex) { Console.WriteLine("Ошибка в блоке controllOrders\n" +
+                    ex.Message); 
+                    
+                    return "";
                 }
 
-                return "";
             }, new ExecutionDataflowBlockOptions { EnsureOrdered = false, MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded });
 
 
@@ -248,9 +258,10 @@ namespace Strategies
                     if (index != -1)
                     {
                         _runningPositions.RemoveAt(index);
-                        //Console.WriteLine($"Валюта: {symbol} -- Удалили выполненную позицию из спика\n" +
-                        //    $"Осталось активных позииций {_nameUser}: {_runningPositions.Count}\n" +
-                        //    $"Время: {DateTime.Now.ToUniversalTime()}");
+
+                        Console.WriteLine($"Валюта: {symbol} -- Удалили выполненную позицию из спиcка\n" +
+                            $"Осталось активных позииций {_nameUser}: {_runningPositions.Count}\n" +
+                            $"Время: {DateTime.Now.ToUniversalTime()}");
                     }
                 }
             }, new ExecutionDataflowBlockOptions { EnsureOrdered = false, MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded });
@@ -292,7 +303,7 @@ namespace Strategies
             {
                 List<BinanceFuturesPlacedOrder> lst = new();
 
-                //Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаем поставить ордера 5 раз");
+                Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаем поставить ордера 5 раз");
                 for (int i = 0; i < 5; i++)
                 {
                     IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
@@ -497,8 +508,8 @@ namespace Strategies
                                                 {
                                                     _runningPositions.Add(signal);
 
-                                                    Console.WriteLine($"User: {_nameUser}, добавили позицию {signal.Symbol} в список -- {DateTime.Now.ToUniversalTime()}");
-                                                    Console.WriteLine($"Количество активных позиций {_nameUser}: {_runningPositions.Count}");
+                                                    Console.WriteLine($"User: {_nameUser} -- добавили позицию {signal.Symbol} в список -- {DateTime.Now.ToUniversalTime()}");
+                                                    Console.WriteLine($"User: {_nameUser} -- Количество активных позиций: {_runningPositions.Count}");
                                                 }
 
                                             }
