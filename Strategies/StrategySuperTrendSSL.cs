@@ -153,7 +153,10 @@ namespace Strategies
                 {
                     Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- отправляем ордера в failed block");
 
-                    await _bufferFailedPlaceOrders.SendAsync(gridOrders);
+                    if(await _bufferFailedPlaceOrders.SendAsync(gridOrders))
+                    {
+                        Console.WriteLine("Отправили ордера в failed block");
+                    }
                 }
 
                 return lst;
