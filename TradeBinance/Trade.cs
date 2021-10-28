@@ -96,11 +96,8 @@ namespace TradeBinance
         {
             List<BinanceFuturesOrder> finishedOrders = new();
 
-            string symbol = orders.First().Symbol;
-            Console.WriteLine($"{symbol}: Контролируем ордера");
-
             // По параметру передаем ордера которые поставили, вместо запроса на получение
-            List<BinanceFuturesOrder> openCurrentOrders = orders.Select(x => new BinanceFuturesOrder()
+            List<BinanceFuturesOrder> openCurrentOrders = orders.Where(x => x != null).Select(x => new BinanceFuturesOrder()
             {
                 ActivatePrice = x.ActivatePrice,
                 AvgPrice = x.AvgPrice,
@@ -124,6 +121,9 @@ namespace TradeBinance
                 UpdateTime = x.UpdateTime,
                 WorkingType = x.WorkingType,
             }).ToList();
+
+            string symbol = openCurrentOrders.First().Symbol;
+            Console.WriteLine($"{symbol}: Контролируем ордера");
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
