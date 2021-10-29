@@ -109,7 +109,7 @@ namespace Strategies
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
+                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
                 EnsureOrdered = false
             });
 
@@ -129,7 +129,7 @@ namespace Strategies
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
+                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
                 EnsureOrdered = false
             });
 
@@ -195,7 +195,7 @@ namespace Strategies
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
+                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
                 EnsureOrdered = false
             });
 
@@ -225,7 +225,7 @@ namespace Strategies
                     return "";
                 }
 
-            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = _tradeSetting.MaxPositions, EnsureOrdered = false });
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded, EnsureOrdered = false });
 
 
             var getTradeHistoryOrders = new ActionBlock<BinanceFuturesOrder>(async _ =>
@@ -243,7 +243,7 @@ namespace Strategies
                     }
                 }
 
-            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = _tradeSetting.MaxPositions, EnsureOrdered = false });
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded, EnsureOrdered = false });
 
 
             var writeTradeHistoryToDB = new ActionBlock<IEnumerable<BinanceFuturesUsdtTrade>>(async _ =>
@@ -282,7 +282,7 @@ namespace Strategies
             var finishedPosition = new ActionBlock<string>(symbol =>
             {
                 DeletePosition(symbol);
-            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = _tradeSetting.MaxPositions, EnsureOrdered = false });
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded, EnsureOrdered = false });
 
             #endregion
 
@@ -312,7 +312,7 @@ namespace Strategies
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
+                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
                 EnsureOrdered = false
             });
 
@@ -343,7 +343,7 @@ namespace Strategies
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
+                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
                 EnsureOrdered = false
             });
 
@@ -368,7 +368,7 @@ namespace Strategies
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
+                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
                 EnsureOrdered = false
             });
 
@@ -416,7 +416,7 @@ namespace Strategies
             #endregion
 
 
-            var produceSignals = ProduceSignals(_superTrendSSLData, maxPositions: _tradeSetting.MaxPositions);
+            var produceSignals = ProduceSignals(_superTrendSSLData, maxPositions: DataflowBlockOptions.Unbounded);
 
             await produceSignals;
 
