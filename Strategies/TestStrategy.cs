@@ -22,7 +22,7 @@ namespace Strategies
 
         public async Task Logic()
         {
-            
+            await Task.Delay(1);
         }
 
         public async Task Start(string nameUser, string key, string secretKey, ApplicationContext dataBase)
