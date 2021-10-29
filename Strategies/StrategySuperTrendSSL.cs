@@ -27,6 +27,8 @@ namespace Strategies
         private SSL _ssl { get; set; }
         private SuperTrend _superTrend { get; set; }
 
+        private User _user { get; set; }
+
         private BufferBlock<Signal> _bufferPositions { get; set; }
         private BufferBlock<string> _bufferFailedPosition { get; set; }
         private BufferBlock<Signal> _bufferFailedEntryMarket { get; set; }
@@ -59,8 +61,19 @@ namespace Strategies
                 new SuperTrendSSLData() { Symbol = "LTCUSDT", Period = 60, ATRMultiplier = 4.2m, ATRPeriod = 13 },
                 new SuperTrendSSLData() { Symbol = "LINKUSDT", Period = 85, ATRMultiplier = 4.0m, ATRPeriod = 27 },
                 new SuperTrendSSLData() { Symbol = "FLMUSDT", Period = 90, ATRMultiplier = 6.4m, ATRPeriod = 10 },
-                //new SuperTrendSSLData() { Symbol = "FTMUSDT", Period = 60, ATRMultiplier = 5.2m, ATRPeriod = 30 },
                 new SuperTrendSSLData() { Symbol = "LUNAUSDT", Period = 75, ATRMultiplier = 5.6m, ATRPeriod = 29 }
+
+
+                #region Test data
+
+                //new SuperTrendSSLData() { Symbol = "BTCUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
+                //new SuperTrendSSLData() { Symbol = "ETHUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
+                //new SuperTrendSSLData() { Symbol = "BCHUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
+                //new SuperTrendSSLData() { Symbol = "XMRUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
+                //new SuperTrendSSLData() { Symbol = "COMPUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
+                //new SuperTrendSSLData() { Symbol = "LTCUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 }
+
+                #endregion
             };
 
             _bufferPositions = new();
@@ -90,13 +103,13 @@ namespace Strategies
                 }
                 else
                 {
-                    _bufferFailedEntryMarket.Post(signal);
+                    await _bufferFailedEntryMarket.SendAsync(signal);
                     return "";
                 }
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
+                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
                 EnsureOrdered = false
             });
 
@@ -110,60 +123,79 @@ namespace Strategies
                 }
                 else
                 {
-                    _bufferFailedPosition.Post(symbol);
+                    await _bufferFailedPosition.SendAsync(symbol);
                     return null;
                 }
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
+                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
                 EnsureOrdered = false
             });
 
             var gridOrders = new TransformBlock<BinancePositionDetailsUsdt, GridOrder>(position =>
             {
-                var orders = _trade.GetGridOrders(position);
-                if (orders.ClosePositionOrders.Any() || orders.LimitOrders.Any())
+                try
                 {
-                    return orders;
-                }
-                else
-                {
-                    return new GridOrder()
+                    var orders = _trade.GetGridOrders(position);
+                    if (orders.ClosePositionOrders.Any() || orders.LimitOrders.Any())
                     {
-                        ClosePositionOrders = new List<BinanceFuturesPlacedOrder>(),
-                        LimitOrders = new List<BinanceFuturesBatchOrder>()
-                    };
+                        return orders;
+                    }
+                    else
+                    {
+                        return new GridOrder()
+                        {
+                            ClosePositionOrders = new List<BinanceFuturesPlacedOrder>(),
+                            LimitOrders = new List<BinanceFuturesBatchOrder>()
+                        };
+                    }
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка в блоке gridOrders\n" +
+                        $"{ex.Message}");
 
-            }, new ExecutionDataflowBlockOptions() { EnsureOrdered = false });
+                    return null;
+                }
+            }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 1, EnsureOrdered = false });
 
             var placeOrders = new TransformBlock<GridOrder, IEnumerable<BinanceFuturesPlacedOrder>>(async gridOrders =>
             {
                 List<BinanceFuturesPlacedOrder> lst = new();
 
-                IEnumerable<BinanceFuturesPlacedOrder> placedOrders = (await _trade.PlaceOrders(gridOrders)).Where(x => x != null);
-                if (placedOrders.Any())
+                try
                 {
-                    lst.AddRange(placedOrders);
-
-                    Console.WriteLine($"User: {_nameUser} -- Поставили ордера по монете {lst.First().Symbol}");
-                }
-                else
-                {
-                    Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- отправляем ордера в failed block");
-
-                    if(await _bufferFailedPlaceOrders.SendAsync(gridOrders))
+                    IEnumerable<BinanceFuturesPlacedOrder> placedOrders = (await _trade.PlaceOrders(gridOrders)).Where(x => x != null);
+                    if (placedOrders.Any())
                     {
-                        Console.WriteLine("Отправили ордера в failed block");
-                    }
-                }
+                        lst.AddRange(placedOrders);
 
-                return lst;
+                        Console.WriteLine($"User: {_nameUser} -- Поставили ордера по монете {lst.First().Symbol}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- отправляем ордера в failed block");
+
+                        if (await _bufferFailedPlaceOrders.SendAsync(gridOrders))
+                        {
+                            Console.WriteLine("Отправили ордера в failed block");
+                        }
+                    }
+
+                    return lst;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка в блоке placeOrders\n" +
+                        $"{ex.Message}");
+
+                    return lst;
+                }
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
+                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
                 EnsureOrdered = false
             });
 
@@ -193,7 +225,7 @@ namespace Strategies
                     return "";
                 }
 
-            }, new ExecutionDataflowBlockOptions { EnsureOrdered = false, MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded });
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = _tradeSetting.MaxPositions, EnsureOrdered = false });
 
 
             var getTradeHistoryOrders = new ActionBlock<BinanceFuturesOrder>(async _ =>
@@ -211,7 +243,7 @@ namespace Strategies
                     }
                 }
 
-            }, new ExecutionDataflowBlockOptions { EnsureOrdered = false, MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded });
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = _tradeSetting.MaxPositions, EnsureOrdered = false });
 
 
             var writeTradeHistoryToDB = new ActionBlock<IEnumerable<BinanceFuturesUsdtTrade>>(async _ =>
@@ -220,54 +252,37 @@ namespace Strategies
 
                 try
                 {
-                    // узнаем id пользователя
-                    User user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(_nameUser));
-                    if (user != null)
+                    var orders = _.Select(x => new Order()
                     {
-                        Console.WriteLine($"Пользователь {_nameUser} найден");
-                        // формируем данные об ордерах для записи в бд
-                        var orders = _.Select(x => new Order()
-                        {
-                            NameStrategy = _nameStrategy,
-                            UserId = user.Id,
-                            PositionSide = x.Side.Equals(OrderSide.Buy) ? PositionSide.Short.ToString() : PositionSide.Long.ToString(),
-                            Commission = x.Commission,
-                            Price = x.Price,
-                            Quantity = x.Quantity,
-                            RealizedPnl = x.RealizedPnl,
-                            Symbol = x.Symbol,
-                            Side = x.Side.ToString(),
-                            TradeTime = x.TradeTime,
-                            OrderId = x.OrderId
-                        }).ToList();
+                        NameStrategy = _nameStrategy,
+                        UserId = _user.Id,
+                        PositionSide = x.Side.Equals(OrderSide.Buy) ? PositionSide.Short.ToString() : PositionSide.Long.ToString(),
+                        Commission = x.Commission,
+                        Price = x.Price,
+                        Quantity = x.Quantity,
+                        RealizedPnl = x.RealizedPnl,
+                        Symbol = x.Symbol,
+                        Side = x.Side.ToString(),
+                        TradeTime = x.TradeTime,
+                        OrderId = x.OrderId
+                    }).ToList();
 
-                        await _dataBase.Orders.AddRangeAsync(orders);
-                        await _dataBase.SaveChangesAsync();
+                    await _dataBase.Orders.AddRangeAsync(orders);
+                    await _dataBase.SaveChangesAsync();
 
-                        Console.WriteLine($"User: {_nameUser} -- записали выполненные ордера в базу данных по валюте {_.First().Symbol}");
-                    }
-                    else { Console.WriteLine($"Пользователь {_nameUser} не найден"); }
+                    Console.WriteLine($"User: {_nameUser} -- записали выполненные ордера в базу данных по валюте {_.First().Symbol}");
+
                 }
-                catch (Exception ex) { Console.WriteLine(ex.Message); }
+                catch (Exception ex) { Console.WriteLine($"Ошибка в блоке writeTradeHistoryToDB\n" +
+                    $"{ex.Message}"); }
 
             }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
 
 
             var finishedPosition = new ActionBlock<string>(symbol =>
             {
-                lock (locker)
-                {
-                    int index = _runningPositions.FindIndex(0, _runningPositions.Count, x => x.Symbol.Equals(symbol));
-                    if (index != -1)
-                    {
-                        _runningPositions.RemoveAt(index);
-
-                        Console.WriteLine($"Валюта: {symbol} -- Удалили выполненную позицию из спиcка\n" +
-                            $"Осталось активных позииций {_nameUser}: {_runningPositions.Count}\n" +
-                            $"Время: {DateTime.Now.ToUniversalTime()}");
-                    }
-                }
-            }, new ExecutionDataflowBlockOptions { EnsureOrdered = false, MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded });
+                DeletePosition(symbol);
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = _tradeSetting.MaxPositions, EnsureOrdered = false });
 
             #endregion
 
@@ -297,7 +312,7 @@ namespace Strategies
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
+                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
                 EnsureOrdered = false
             });
 
@@ -306,7 +321,7 @@ namespace Strategies
             {
                 List<BinanceFuturesPlacedOrder> lst = new();
 
-                Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаем поставить ордера 5 раз");
+                Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаемся поставить ордера 5 раз");
                 for (int i = 0; i < 5; i++)
                 {
                     IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
@@ -322,17 +337,19 @@ namespace Strategies
 
                 Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Не удалось выставить ордера за 5 попыток");
 
+                DeletePosition(gridOrders.ClosePositionOrders.First().Symbol);
+
                 return lst;
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
+                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
                 EnsureOrdered = false
             });
 
             var tryExecuteFailedEntryMarket = new TransformBlock<Signal, string>(async signal =>
             {
-                Console.WriteLine($"Валюта: {signal.Symbol} -- Пытаем зайти в рынок 5 раз");
+                Console.WriteLine($"Валюта: {signal.Symbol} -- Пытаемся зайти в рынок 5 раз");
                 for (int i = 0; i < 5; i++)
                 {
                     string entriedMarket = await _trade.EntryMarket(signal.Symbol, price: signal.Price, _tradeSetting.BalanceUSDT, signal.TypePosition);
@@ -345,13 +362,14 @@ namespace Strategies
 
                 Console.WriteLine($"Валюта: {signal.Symbol} -- Не удалось зайти в рынок за 5 попыток");
 
+                DeletePosition(signal.Symbol);
+
                 return null;
 
             }, new ExecutionDataflowBlockOptions
             {
-                MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded,
-                EnsureOrdered = false,
-
+                MaxDegreeOfParallelism = _tradeSetting.MaxPositions,
+                EnsureOrdered = false
             });
 
             #endregion
@@ -367,7 +385,7 @@ namespace Strategies
             currentPosition.LinkTo(gridOrders, options, x => x != null);
             currentPosition.LinkTo(DataflowBlock.NullTarget<BinancePositionDetailsUsdt>());
 
-            gridOrders.LinkTo(placeOrders, options);
+            gridOrders.LinkTo(placeOrders, options, x => x != null);
             gridOrders.LinkTo(DataflowBlock.NullTarget<GridOrder>());
 
             placeOrders.LinkTo(contollOrders, options, x => x.Any());
@@ -391,24 +409,34 @@ namespace Strategies
             tryExecuteFailedPosition.LinkTo(gridOrders, options, x => x != null);
             tryExecuteFailedPosition.LinkTo(DataflowBlock.NullTarget<BinancePositionDetailsUsdt>());
 
-            _bufferFailedPlaceOrders.LinkTo(tryExecuteFailedPlaceOrders, options);
+            _bufferFailedPlaceOrders.LinkTo(tryExecuteFailedPlaceOrders, options, x => x != null);
             tryExecuteFailedPlaceOrders.LinkTo(contollOrders, options, x => x.Any());
             tryExecuteFailedPlaceOrders.LinkTo(DataflowBlock.NullTarget<IEnumerable<BinanceFuturesPlacedOrder>>());
-            #endregion
 
-            //var completeProducer = _bufferPositions.Completion.ContinueWith(x =>
-            //{
-            //    Console.WriteLine($"Баланс меньше { _tradeSetting.StopBalance } $\n" +
-            //        $"Время: {DateTime.Now.ToUniversalTime()}");
-            //});
+            #endregion
 
 
             var produceSignals = ProduceSignals(_superTrendSSLData, maxPositions: _tradeSetting.MaxPositions);
 
             await produceSignals;
-            //await completeProducer;
 
             Console.WriteLine("Стратегия завершилась!");
+        }
+
+        private void DeletePosition(string symbol)
+        {
+            lock (locker)
+            {
+                int index = _runningPositions.FindIndex(0, _runningPositions.Count, x => x.Symbol.Equals(symbol));
+                if (index != -1)
+                {
+                    _runningPositions.RemoveAt(index);
+
+                    Console.WriteLine($"Валюта: {symbol} -- Удалили выполненную позицию из спиcка\n" +
+                        $"Осталось активных позииций {_nameUser}: {_runningPositions.Count}\n" +
+                        $"Время: {DateTime.Now.ToUniversalTime()}");
+                }
+            }
         }
 
         private async Task WaitTime()
@@ -432,14 +460,12 @@ namespace Strategies
             await _trade.SetExchangeInformationAsync();
             await _trade.SetTradeSettings(_superTrendSSLData.Select(x => x.Symbol));
 
-            try
+            _user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(_nameUser));
+            if (_user != null)
             {
                 await Logic();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            else { Console.WriteLine($"Пользователь {_nameUser} не найден"); }
         }
 
         private IEnumerable<Signal> GetSignals(IEnumerable<IEnumerable<Kline>> klines)
@@ -503,29 +529,26 @@ namespace Strategies
                                     {
                                         lock (locker)
                                         {
-                                            bool ckeckRunPositions = _runningPositions.Where(x => x.Symbol.Equals(signal.Symbol)).Any();
-                                            if (!ckeckRunPositions)
+                                            if (_runningPositions.Count != maxPositions)
                                             {
-                                                bool isPost = _bufferPositions.Post(signal);
-                                                if (isPost)
+                                                bool ckeckRunPositions = _runningPositions.Where(x => x.Symbol.Equals(signal.Symbol)).Any();
+                                                if (!ckeckRunPositions)
                                                 {
-                                                    _runningPositions.Add(signal);
+                                                    bool isPost = _bufferPositions.Post(signal);
+                                                    if (isPost)
+                                                    {
+                                                        _runningPositions.Add(signal);
 
-                                                    Console.WriteLine($"User: {_nameUser} -- добавили позицию {signal.Symbol} в список -- {DateTime.Now.ToUniversalTime()}");
-                                                    Console.WriteLine($"User: {_nameUser} -- Количество активных позиций: {_runningPositions.Count}");
+                                                        Console.WriteLine($"User: {_nameUser} -- добавили позицию {signal.Symbol} в список -- {DateTime.Now.ToUniversalTime()}");
+                                                        Console.WriteLine($"User: {_nameUser} -- Количество активных позиций: {_runningPositions.Count}");
+                                                    }
                                                 }
-
                                             }
-
-                                            else
-                                            {
-                                                //Console.WriteLine("Количество превышает максимально открытых позиций");
-                                                break;
-                                            }
+                                            else { Console.WriteLine("Максимальное количество открытых позиций достигнуто!"); break; }
                                         }
                                     }
                                 }
-                                else { Console.WriteLine($"Баланс меньше, чем {_tradeSetting.BalanceUSDT}"); }
+                                else { Console.WriteLine($"Баланс меньше {_tradeSetting.BalanceUSDT}"); }
                             }
                             else { continue; }
                         }
