@@ -219,9 +219,11 @@ namespace Strategies
 
                     return "";
                 }
-                catch (Exception ex) { Console.WriteLine("Ошибка в блоке controllOrders\n" +
-                    ex.Message); 
-                    
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Ошибка в блоке controllOrders\n" +
+ ex.Message);
+
                     return "";
                 }
 
@@ -273,8 +275,11 @@ namespace Strategies
                     Console.WriteLine($"User: {_nameUser} -- записали выполненные ордера в базу данных по валюте {_.First().Symbol}");
 
                 }
-                catch (Exception ex) { Console.WriteLine($"Ошибка в блоке writeTradeHistoryToDB\n" +
-                    $"{ex.Message}"); }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка в блоке writeTradeHistoryToDB\n" +
+ $"{ex.Message}");
+                }
 
             }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
 
@@ -463,6 +468,7 @@ namespace Strategies
             _user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(_nameUser));
             if (_user != null)
             {
+                Console.WriteLine($"User: {_user.Name}. Запущена стратегия {_nameStrategy}");
                 await Logic();
             }
             else { Console.WriteLine($"Пользователь {_nameUser} не найден"); }
@@ -549,7 +555,7 @@ namespace Strategies
                                                     }
                                                 }
                                             }
-                                            else { Console.WriteLine("Максимальное количество открытых позиций достигнуто!"); break; }
+                                            else { Console.WriteLine($"User: {_nameUser} -- Максимальное количество открытых позиций достигнуто!"); break; }
                                         }
                                     }
                                 }
