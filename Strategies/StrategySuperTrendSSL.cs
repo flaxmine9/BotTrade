@@ -39,7 +39,7 @@ namespace Strategies
         private List<SuperTrendSSLData> _superTrendSSLData { get; set; }
         private List<Signal> _runningPositions { get; set; }
 
-        private object locker = new object();
+        private readonly object locker = new object();
 
         private ApplicationContext _dataBase { get; set; }
 
@@ -419,7 +419,7 @@ namespace Strategies
             #endregion
 
 
-            var produceSignals = ProduceSignals(_superTrendSSLData, maxPositions: DataflowBlockOptions.Unbounded);
+            var produceSignals = ProduceSignals(_superTrendSSLData, maxPositions: _tradeSetting.MaxPositions);
 
             await produceSignals;
 
