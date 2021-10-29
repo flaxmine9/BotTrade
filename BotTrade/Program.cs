@@ -27,7 +27,7 @@ namespace FlaxTrade
             Client clientFlax = new Client("flaxmine", new ApiSetting() { Key = key, SecretKey = secretKey }, new ApplicationContext());
             clientFlax.AddStrategy(new StrategySuperTrendSSL
                 (
-                   new TradeSetting(TimeFrame.FiveMinutes, takeProfit: 1.015m, stopLoss: 1.0075m, leverage: 10, futuresMarginType: "Isolated",
+                   new TradeSetting(TimeFrame.FiveMinutes, takeProfit: 1.0085m, stopLoss: 1.005m, leverage: 10, futuresMarginType: "Isolated",
                         maxOrders: 10, balanceUSDT: 8.5m, maxPositions: 1)
                 ));
 
