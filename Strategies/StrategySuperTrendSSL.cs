@@ -220,7 +220,7 @@ namespace Strategies
                 catch (Exception ex)
                 {
                     Console.WriteLine("Ошибка в блоке controllOrders\n" +
- ex.Message);
+                        ex.Message);
 
                     return "";
                 }
@@ -276,7 +276,7 @@ namespace Strategies
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Ошибка в блоке writeTradeHistoryToDB\n" +
- $"{ex.Message}");
+                        $"{ex.Message}");
                 }
 
             }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
@@ -522,7 +522,7 @@ namespace Strategies
             {
                 try
                 {
-                    if (_runningPositions.Count != maxPositions)
+                    if (_runningPositions.Count < maxPositions)
                     {
                         var klines = await _trade.GetLstKlinesAsync(data.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, periodKlines);
                         IEnumerable<Signal> signals = GetSignals(klines);
@@ -538,7 +538,7 @@ namespace Strategies
                                     {
                                         lock (locker)
                                         {
-                                            if (_runningPositions.Count != maxPositions)
+                                            if (_runningPositions.Count < maxPositions)
                                             {
                                                 bool ckeckRunPositions = _runningPositions.Where(x => x.Symbol.Equals(signal.Symbol)).Any();
                                                 if (!ckeckRunPositions)
