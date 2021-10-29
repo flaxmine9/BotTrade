@@ -84,7 +84,7 @@ namespace Strategies
             _bufferFailedPlaceOrders = new();
 
             _bufferFirstFinishedOrder = new();
-            _bufferWriteTradeHistoryToDB = new BufferBlock<IEnumerable<BinanceFuturesUsdtTrade>>(new DataflowBlockOptions() { });
+            _bufferWriteTradeHistoryToDB = new BufferBlock<IEnumerable<BinanceFuturesUsdtTrade>>();
         }
 
         public async Task Logic()
@@ -474,6 +474,11 @@ namespace Strategies
 
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
+                if (lstKlines.First().Symbol.Equals("RAYUSDT"))
+                {
+                    continue;
+                }
+
                 List<Kline> withOutLastKline = lstKlines.SkipLast(1).ToList();
 
                 SuperTrendSSLData data = _superTrendSSLData.Where(x => withOutLastKline.First().Symbol.Equals(x.Symbol)).First();
