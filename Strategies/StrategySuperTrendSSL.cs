@@ -89,8 +89,6 @@ namespace Strategies
 
         public async Task Logic()
         {
-            Console.WriteLine("Strategy is started!");
-
             #region pipeline
 
             var entryMarket = new TransformBlock<Signal, string>(async signal =>
