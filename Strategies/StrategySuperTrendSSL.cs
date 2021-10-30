@@ -60,8 +60,7 @@ namespace Strategies
                 new SuperTrendSSLData() { Symbol = "XRPUSDT", Period = 70, ATRMultiplier = 5.0m, ATRPeriod = 10 },
                 new SuperTrendSSLData() { Symbol = "LTCUSDT", Period = 60, ATRMultiplier = 4.2m, ATRPeriod = 13 },
                 new SuperTrendSSLData() { Symbol = "LINKUSDT", Period = 85, ATRMultiplier = 4.0m, ATRPeriod = 27 },
-                new SuperTrendSSLData() { Symbol = "FLMUSDT", Period = 90, ATRMultiplier = 6.4m, ATRPeriod = 10 },
-                new SuperTrendSSLData() { Symbol = "LUNAUSDT", Period = 75, ATRMultiplier = 5.6m, ATRPeriod = 29 }
+                new SuperTrendSSLData() { Symbol = "FLMUSDT", Period = 90, ATRMultiplier = 6.4m, ATRPeriod = 10 }
 
 
                 #region Test data
@@ -532,10 +531,11 @@ namespace Strategies
                             var balanceUSDT = await _trade.GetBalanceAsync();
                             if (balanceUSDT != -1)
                             {
-                                if (balanceUSDT >= _tradeSetting.BalanceUSDT)
+                                foreach (Signal signal in signals)
                                 {
-                                    foreach (Signal signal in signals)
+                                    if (balanceUSDT >= _tradeSetting.BalanceUSDT)
                                     {
+                                        balanceUSDT -= _tradeSetting.BalanceUSDT;
                                         lock (locker)
                                         {
                                             if (_runningPositions.Count < maxPositions)
@@ -556,8 +556,8 @@ namespace Strategies
                                             else { Console.WriteLine($"User: {_nameUser} -- Максимальное количество открытых позиций достигнуто!"); break; }
                                         }
                                     }
+                                    else { Console.WriteLine($"Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
                                 }
-                                else { Console.WriteLine($"Баланс меньше {_tradeSetting.BalanceUSDT}"); }
                             }
                             else { continue; }
                         }
