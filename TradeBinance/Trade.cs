@@ -18,13 +18,14 @@ namespace TradeBinance
     {
         private EqualityOrder _equalityOrder { get; set; }
         private BinanceInteraction _binanceInteraction { get; set; }
-        private TradeSetting _tradeSetting { get; set; }
+        public TradeSetting _tradeSetting { get; set; }
 
-        public Trade(string key, string secretKey, TradeSetting tradeSetting)
+        public Trade(string key, string secretKey, TradeSetting tradeSetting, string typeNetBinance)
         {
-            _binanceInteraction = new BinanceInteraction(key, secretKey);
+            _binanceInteraction = new BinanceInteraction(key, secretKey, typeNetBinance);
 
             _equalityOrder = new EqualityOrder();
+
             _tradeSetting = tradeSetting;
         }
 
