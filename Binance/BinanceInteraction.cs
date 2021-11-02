@@ -18,21 +18,22 @@ namespace Binance
         private BinanceClient _binanceClient { get; set; }
         public BinanceFuturesUsdtExchangeInfo _exchangeInfo { get; set; }
 
-        public BinanceInteraction(string key, string secretKey)
+        public BinanceInteraction(string key, string secretKey, string typeNetBinance)
         {
-            _binanceClient = new BinanceClient(new BinanceClientOptions()
+            if (typeNetBinance.Equals("MainNet"))
             {
-                ApiCredentials = new ApiCredentials(key, secretKey)
-            });
-
-            #region TestNet Binance
-
-            //_binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
-            //{
-            //    ApiCredentials = new ApiCredentials(key, secretKey)
-            //});
-
-            #endregion
+                _binanceClient = new BinanceClient(new BinanceClientOptions()
+                {
+                    ApiCredentials = new ApiCredentials(key, secretKey)
+                });
+            }
+            else
+            {
+                _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
+                {
+                    ApiCredentials = new ApiCredentials(key, secretKey)
+                });
+            }
         }
 
         #region binance helpers
@@ -371,8 +372,8 @@ namespace Binance
         /// <returns>Результат выполнения (true/false)</returns>
         public async Task<bool> SetSettingsAsync(string symbol, int leverage, string futureMarginType)
         {
-            var initLeverage = await _binanceClient.FuturesUsdt.ChangeInitialLeverageAsync(symbol, leverage);
-            var marginType = await _binanceClient.FuturesUsdt.ChangeMarginTypeAsync(symbol, futureMarginType.Equals("Isolated") ? FuturesMarginType.Isolated : FuturesMarginType.Cross);
+            var initLeverage = await _binanceClient.FuturesUsdt.ChangeInitialLeverageAsync(symbol, leverage, receiveWindow: 15000);
+            var marginType = await _binanceClient.FuturesUsdt.ChangeMarginTypeAsync(symbol, futureMarginType.Equals("Isolated") ? FuturesMarginType.Isolated : FuturesMarginType.Cross, receiveWindow: 15000);
 
             if (initLeverage.Success && marginType.Success)
             {
