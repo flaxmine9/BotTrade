@@ -1,5 +1,7 @@
 ﻿using Binance.Net.Enums;
 using DataBase;
+using DataBase.Models;
+using Microsoft.EntityFrameworkCore;
 using Strategies.Models;
 using Strategy.Interfaces;
 using System;
@@ -10,18 +12,23 @@ using System.Threading.Tasks.Dataflow;
 using TechnicalIndicator.Models;
 using TradeBinance;
 using TradeBinance.Models;
+using TradePipeLine;
 
 namespace Strategies
 {
     public class Scalping : IStrategy
     {
+        private string _nameStrategy { get; set; } = "Scalping";
+
         private TradeSetting _tradeSetting { get; set; }
         private Trade _trade { get; set; }
-
-        private bool flag { get; set; } = true;
-
         private List<string> _symbols { get; set; }
         private IEnumerable<Pump> _pumps { get; set; }
+
+        private User _user { get; set; }
+        private ApplicationContext _dataBase { get; set; }
+
+        private string _nameUser { get; set; }
 
         private BufferBlock<IEnumerable<IEnumerable<Kline>>> _bufferKlines { get; set; }
 
@@ -33,7 +40,7 @@ namespace Strategies
 
             _symbols = new List<string>()
             {
-                "ETHUSDT"
+                "BCHUSDT", "XMRUSDT", "COMPUSDT"
             };
 
             //_pumps = new List<Pump>()
@@ -49,84 +56,69 @@ namespace Strategies
 
         public async Task Logic()
         {
-            Random random = new Random();
+            #region new logic
 
-            await _trade.SetTradeSettings(_symbols);
+            PipeLine pipeLine = new PipeLine(_trade, _user, _dataBase, _nameStrategy, waitAfterExitPosition: true);
+
+            pipeLine.Create();
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                IEnumerable<IEnumerable<Kline>> klines = await _trade.GetLstKlinesAsync(_symbols, KlineInterval.FiveMinutes, limit: 3);
-
-                List<Kline> klinesPumps = CheckPumpVolumesAsync(klines).ToList();
-                if (klinesPumps.Any())
+                if (pipeLine.CheckFreePositions())
                 {
-                    Kline randomKlinePump = klinesPumps[random.Next(0, klinesPumps.Count)];
+                    var klines = await _trade.GetLstKlinesAsync(_symbols, (KlineInterval)_tradeSetting.TimeFrame, 5);
+                    IEnumerable<TradeSignal> signals = GetSignals(klines);
 
-                    Console.WriteLine($"Symbol: {randomKlinePump.Symbol}\n" +
-                        $"Time: {DateTime.Now.ToLocalTime()}");
-
-                    TypePosition typePosition = randomKlinePump.Close > randomKlinePump.Open ? TypePosition.Long : TypePosition.Short;
-
-                    string entriedMarket = await _trade.EntryMarket(randomKlinePump.Symbol, price: randomKlinePump.Close, _tradeSetting.BalanceUSDT, typePosition);
-                    if (entriedMarket != null)
+                    if (signals.Any())
                     {
-                        Console.WriteLine("Зашли в позицию по валюте: {0}", randomKlinePump.Symbol);
-                        var position = await _trade.GetCurrentOpenPositionAsync(randomKlinePump.Symbol);
-                        if (position != null)
+                        var balanceUSDT = await _trade.GetBalanceAsync();
+                        if (balanceUSDT != -1)
                         {
-                            var gridOrders = _trade.GetGridOrders(position);
-                            var placedOrders = await _trade.PlaceOrders(gridOrders);
-                            if (placedOrders.Any())
+                            foreach (TradeSignal signal in signals)
                             {
-                                Console.WriteLine("Поставили ордера по валюте {0}", randomKlinePump.Symbol);
-
-                                await _trade.ControlOrders(placedOrders, 100);
-
-                                var klineForTime = await _trade.GetKlineAsync(randomKlinePump.Symbol, KlineInterval.FiveMinutes, limit: 1);
-
-                                if (klineForTime != null)
+                                if (balanceUSDT >= _tradeSetting.BalanceUSDT)
                                 {
-                                    var timeNow = DateTime.Now.ToUniversalTime();
+                                    if (pipeLine.CheckFreePositions())
+                                    {
+                                        balanceUSDT -= _tradeSetting.BalanceUSDT;
 
-                                    TimeSpan waitTime = klineForTime.CloseTime.AddMilliseconds(1100) - timeNow;
-
-                                    Console.WriteLine($"Ждем завершения формирования свечи {klineForTime.Symbol}: {(int)waitTime.TotalSeconds} секунд");
-
-                                    await Task.Delay((int)waitTime.TotalMilliseconds);
-
-                                    Console.WriteLine("Свеча сформировалась! Ищем дальше сигналы");
-
+                                        pipeLine.AddSignal(signal);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Валюта: {randomKlinePump.Symbol} -- не удалось поставить ордера, пытаем поставить заново!");
-                                placedOrders = await _trade.PlaceOrders(gridOrders);
-
-                                Console.WriteLine("Поставили ордера по валюте {0}", randomKlinePump.Symbol);
-
-                                await _trade.ControlOrders(placedOrders, 100);
+                                else { Console.WriteLine($"User: {_user.Name}. Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
                             }
                         }
-                        else { Console.WriteLine($"Валюта: {randomKlinePump.Symbol} -- Не удалось получить позицию"); }
+                        else { continue; }
                     }
                 }
+                await Task.Delay(50);
             }
+
+            #endregion
         }
 
 
-        public async Task Start(string nameUser,  string key, string secretKey, ApplicationContext dataBase)
+        public async Task Start(string nameUser, string key, string secretKey, ApplicationContext dataBase, string typeNetBinance)
         {
-            _trade = new Trade(key, secretKey, _tradeSetting);
+            _trade = new Trade(key, secretKey, _tradeSetting, typeNetBinance);
+            _dataBase = dataBase;
+            _nameUser = nameUser;
 
             await _trade.SetExchangeInformationAsync();
+            await _trade.SetTradeSettings(_symbols);
 
-            await Logic();
+            _user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(_nameUser));
+            if (_user != null)
+            {
+                Console.WriteLine($"User: {_user.Name}. Запущена стратегия {_nameStrategy}");
+                await Logic();
+            }
+            else { Console.WriteLine($"Пользователь {_nameUser} не найден"); }
         }
 
-        private IEnumerable<Kline> CheckPumpVolumesAsync(IEnumerable<IEnumerable<Kline>> klines)
+        private IEnumerable<TradeSignal> GetSignals(IEnumerable<IEnumerable<Kline>> klines)
         {
-            List<Kline> list = new List<Kline>();
+            List<TradeSignal> signals = new();
 
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
@@ -135,11 +127,37 @@ namespace Strategies
                     //&& (lstKlines.Last().Close / lstKlines.Last().Open >= 1.0035m || lstKlines.Last().Open / lstKlines.Last().Close >= 1.0035m)
                     )
                 {
-                    list.Add(lstKlines.Last());
+                    if(lstKlines.Last().Close > lstKlines.Last().Open)
+                    {
+                        // long
+
+                        signals.Add(new TradeSignal()
+                        {
+                            Price = lstKlines.Last().Close,
+                            Symbol = lstKlines.Last().Symbol,
+                            TypePosition = TypePosition.Long
+                        });
+                    }
+                    else if(lstKlines.Last().Close < lstKlines.Last().Open)
+                    {
+                        // short
+
+                        signals.Add(new TradeSignal()
+                        {
+                            Price = lstKlines.Last().Close,
+                            Symbol = lstKlines.Last().Symbol,
+                            TypePosition = TypePosition.Short
+                        });
+                    }
                 }
             }
 
-            return list;
+            return signals;
+        }
+
+        public Task Start(string nameUser, string key, string secretKey, ApplicationContext dataBase)
+        {
+            throw new NotImplementedException();
         }
 
         //private IEnumerable<Kline> CheckPumpVolumesAsync(IEnumerable<IEnumerable<Kline>> klines)
