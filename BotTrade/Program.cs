@@ -1,7 +1,7 @@
-﻿using DataBase;
+﻿using BotTrade;
+using DataBase;
 using Strategies;
 using System;
-using Test;
 using TradeBinance;
 
 namespace FlaxTrade
