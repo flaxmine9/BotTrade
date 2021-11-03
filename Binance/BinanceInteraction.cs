@@ -153,6 +153,54 @@ namespace Binance
             return new OrderInfo() { QuantitiesAsset = quantitiesLst, QuantityOrders = quantitiesLst.Count };
         }
 
+        public OrderInfo CalculateQuantity2(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
+        {
+            OrderInfo orderInfo = new OrderInfo() { QuantitiesAsset = new List<decimal>() };
+
+            var exchange = GetInfo(position.Symbol);
+            var minQuantity = exchange.LotSizeFilter.MinQuantity;
+
+            decimal quantityForOneOrder = Math.Abs(position.Quantity) / maxOrders;
+            quantityForOneOrder -= quantityForOneOrder % exchange.LotSizeFilter.MinQuantity;
+
+            if (position.Quantity > 0)
+            {
+                for (int i = 0; i < maxOrders; i++)
+                {
+                    if (quantityForOneOrder <= minQuantity
+                    && quantityForOneOrder * position.EntryPrice < 5.0m)
+                    {
+                        maxOrders -= 1;
+                        quantityForOneOrder = Math.Abs(position.Quantity) / maxOrders;
+                    }
+                    else { break; }
+                }
+            }
+            else if(position.Quantity < 0)
+            {
+                for (int i = 0; i < maxOrders; i++)
+                {
+                    if (quantityForOneOrder <= minQuantity
+                    && quantityForOneOrder * position.EntryPrice / takeProfit <= 5.0m)
+                    {
+                        maxOrders -= 1;
+                        quantityForOneOrder = Math.Abs(position.Quantity) / maxOrders;
+                    }
+                    else { break; }
+                }
+            }
+
+            for (int i = 0; i < maxOrders; i++)
+            {
+                orderInfo.QuantitiesAsset.Add(quantityForOneOrder);
+            }
+
+            orderInfo.QuantityOrders = maxOrders;
+
+            return orderInfo;
+        }
+
+
         /// <summary>
         /// Применяем условия биржи для количества валюты
         /// </summary>
