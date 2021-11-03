@@ -1,9 +1,9 @@
-﻿using DataBase;
+﻿using BotTrade;
+using DataBase;
 using Strategy.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Test;
 
 namespace FlaxTrade
 {
