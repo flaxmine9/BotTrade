@@ -161,7 +161,7 @@ namespace TradePipeLine
 
                     return null;
                 }
-            }, new ExecutionDataflowBlockOptions() { MaxDegreeOfParallelism = 1, EnsureOrdered = false });
+            }, new ExecutionDataflowBlockOptions() { EnsureOrdered = false });
 
             var placeOrders = new TransformBlock<GridOrder, IEnumerable<BinanceFuturesPlacedOrder>>(async gridOrders =>
             {
