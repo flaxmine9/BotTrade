@@ -13,6 +13,7 @@
     <ProjectReference Include="..\DataBase\DataBase.csproj" />
     <ProjectReference Include="..\TechnicalIndicator\TechnicalIndicator.csproj" />
     <ProjectReference Include="..\TradeBinance\TradeBinance.csproj" />
+    <ProjectReference Include="..\TradePipeLine\TradePipeLine.csproj" />
   </ItemGroup>
 
 </Project>

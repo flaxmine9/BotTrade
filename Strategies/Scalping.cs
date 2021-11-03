@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
 using TechnicalIndicator.Models;
 using TradeBinance;
 using TradeBinance.Models;
@@ -22,36 +21,24 @@ namespace Strategies
 
         private TradeSetting _tradeSetting { get; set; }
         private Trade _trade { get; set; }
-        private List<string> _symbols { get; set; }
-        private IEnumerable<Pump> _pumps { get; set; }
-
+       
         private User _user { get; set; }
         private ApplicationContext _dataBase { get; set; }
 
-        private string _nameUser { get; set; }
-
-        private BufferBlock<IEnumerable<IEnumerable<Kline>>> _bufferKlines { get; set; }
+        private List<PumpData> _pumpData { get; set; }
 
         public Scalping(TradeSetting tradeSetting)
         {
-            _bufferKlines = new BufferBlock<IEnumerable<IEnumerable<Kline>>>();
             _tradeSetting = tradeSetting;
 
-
-            _symbols = new List<string>()
-            {
-                "BCHUSDT", "XMRUSDT", "COMPUSDT"
+            _pumpData = new List<PumpData> 
+            { 
+                new PumpData() { Symbol = "KEEPUSDT", LimitVolume = 2000000.0m, TakeProfit = 1.025m, StopLoss = 1.015m },
+                new PumpData() { Symbol = "IOTXUSDT", LimitVolume = 7000000.0m, TakeProfit = 1.0125m, StopLoss = 1.0125m },
+                new PumpData() { Symbol = "COTIUSDT", LimitVolume = 10000000.0m, TakeProfit = 1.035m, StopLoss = 1.0175m },
+                new PumpData() { Symbol = "FTMUSDT", LimitVolume = 9000000.0m, TakeProfit = 1.02m, StopLoss = 1.0125m },
+                new PumpData() { Symbol = "DODOUSDT", LimitVolume = 1500000.0m, TakeProfit = 1.025m, StopLoss = 1.015m }
             };
-
-            //_pumps = new List<Pump>()
-            //{
-            //    new Pump() { Symbol = "ATAUSDT", VolumeUSDT = 200000.0m },
-            //    new Pump() { Symbol = "COTIUSDT", VolumeUSDT = 1000000.0m },
-            //    new Pump() { Symbol = "FTMUSDT", VolumeUSDT = 9000000.0m },
-            //    new Pump() { Symbol = "NKNUSDT", VolumeUSDT = 200000.0m },
-            //    new Pump() { Symbol = "KEEPUSDT", VolumeUSDT = 90000.0m },
-            //    new Pump() { Symbol = "ADAUSDT", VolumeUSDT = 2500000.0m },
-            //};
         }
 
         public async Task Logic()
@@ -66,7 +53,7 @@ namespace Strategies
             {
                 if (pipeLine.CheckFreePositions())
                 {
-                    var klines = await _trade.GetLstKlinesAsync(_symbols, (KlineInterval)_tradeSetting.TimeFrame, 5);
+                    var klines = await _trade.GetLstKlinesAsync(_pumpData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, 1);
                     IEnumerable<TradeSignal> signals = GetSignals(klines);
 
                     if (signals.Any())
@@ -102,18 +89,17 @@ namespace Strategies
         {
             _trade = new Trade(key, secretKey, _tradeSetting, typeNetBinance);
             _dataBase = dataBase;
-            _nameUser = nameUser;
 
             await _trade.SetExchangeInformationAsync();
-            await _trade.SetTradeSettings(_symbols);
+            await _trade.SetTradeSettings(_pumpData.Select(x => x.Symbol));
 
-            _user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(_nameUser));
+            _user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(nameUser));
             if (_user != null)
             {
                 Console.WriteLine($"User: {_user.Name}. Запущена стратегия {_nameStrategy}");
                 await Logic();
             }
-            else { Console.WriteLine($"Пользователь {_nameUser} не найден"); }
+            else { Console.WriteLine($"Пользователь {nameUser} не найден"); }
         }
 
         private IEnumerable<TradeSignal> GetSignals(IEnumerable<IEnumerable<Kline>> klines)
@@ -122,15 +108,12 @@ namespace Strategies
 
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
-                decimal avrVolumeNineKlines = lstKlines.SkipLast(1).Average(x => x.QuoteVolume);
-                if (lstKlines.Last().QuoteVolume >= avrVolumeNineKlines
-                    //&& (lstKlines.Last().Close / lstKlines.Last().Open >= 1.0035m || lstKlines.Last().Open / lstKlines.Last().Close >= 1.0035m)
-                    )
-                {
-                    if(lstKlines.Last().Close > lstKlines.Last().Open)
-                    {
-                        // long
+                decimal limitVolume = _pumpData.Where(x => x.Symbol.Equals(lstKlines.Last().Symbol)).First().LimitVolume;
 
+                if (lstKlines.Last().BaseVolume >= limitVolume)
+                {
+                    if (lstKlines.Last().Close > lstKlines.Last().Open)
+                    {
                         signals.Add(new TradeSignal()
                         {
                             Price = lstKlines.Last().Close,
@@ -138,10 +121,8 @@ namespace Strategies
                             TypePosition = TypePosition.Long
                         });
                     }
-                    else if(lstKlines.Last().Close < lstKlines.Last().Open)
+                    else if (lstKlines.Last().Close < lstKlines.Last().Open)
                     {
-                        // short
-
                         signals.Add(new TradeSignal()
                         {
                             Price = lstKlines.Last().Close,
@@ -154,27 +135,5 @@ namespace Strategies
 
             return signals;
         }
-
-        public Task Start(string nameUser, string key, string secretKey, ApplicationContext dataBase)
-        {
-            throw new NotImplementedException();
-        }
-
-        //private IEnumerable<Kline> CheckPumpVolumesAsync(IEnumerable<IEnumerable<Kline>> klines)
-        //{
-        //    List<Kline> list = new List<Kline>();
-
-        //    foreach (IEnumerable<Kline> lstKlines in klines)
-        //    {
-        //        decimal volumeUSDT = _pumps.Where(x => x.Symbol.Equals(lstKlines.Last().Symbol)).First().VolumeUSDT;
-        //        if (lstKlines.Last().QuoteVolume >= volumeUSDT
-        //            && (lstKlines.Last().Close / lstKlines.Last().Open >= 1.005m || lstKlines.Last().Open / lstKlines.Last().Close >= 1.005m))
-        //        {
-        //            list.Add(lstKlines.Last());
-        //        }
-        //    }
-
-        //    return list;
-        //}
     }
 }
