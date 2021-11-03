@@ -223,9 +223,13 @@ namespace TradeBinance
         /// <returns>Ордера</returns>
         public GridOrder GetGridOrders(BinancePositionDetailsUsdt position)
         {
+            // передать тип подсчета количества монет на ордер в качестве параметру в данную функцию
+            // если тип равен "равномерное распределение", то вызываем соотвествующую функцию подсчета
+            // и так для каждого типа распределения (для каждого распределения - своя функция)
+
             BinanceFuturesUsdtSymbol symbolInfo = _binanceInteraction.GetInfo(position.Symbol);
 
-            OrderInfo orderInfo = _binanceInteraction.CalculateQuantity(position, _tradeSetting.TakeProfit, _tradeSetting.MaxOrders);
+            OrderInfo orderInfo = _binanceInteraction.CalculateQuantity2(position, _tradeSetting.TakeProfit, _tradeSetting.MaxOrders);
 
             decimal percentBetweenOrders = _binanceInteraction.CountPercenBetweenOrders(_tradeSetting.TakeProfit, orderInfo.QuantityOrders);
 
