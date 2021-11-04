@@ -1,5 +1,6 @@
 ﻿using BotTrade;
 using DataBase;
+using DataBase.Models;
 using Strategy.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +39,7 @@ namespace FlaxTrade
             var isAny = _dataBase.Users.Where(x => x.Name.Equals(NameUser)).ToList().Any();
             if (!isAny)
             {
-                _dataBase.Users.Add(new DataBase.Models.User() { Name = NameUser, TelegramUserId = 0 });
+                _dataBase.Users.Add(new User() { Name = NameUser, TelegramUserId = 0 });
                 _dataBase.SaveChanges();
             }
 
