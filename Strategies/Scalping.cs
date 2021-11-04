@@ -34,7 +34,7 @@ namespace Strategies
             _pumpData = new List<PumpData> 
             { 
                 new PumpData() { Symbol = "KEEPUSDT", LimitVolume = 2000000.0m, TakeProfit = 1.025m, StopLoss = 1.015m },
-                new PumpData() { Symbol = "IOTXUSDT", LimitVolume = 7000000.0m, TakeProfit = 1.0125m, StopLoss = 1.0125m },
+                new PumpData() { Symbol = "IOTXUSDT", LimitVolume = 20000000.0m, TakeProfit = 1.0125m, StopLoss = 1.0125m },
                 new PumpData() { Symbol = "COTIUSDT", LimitVolume = 10000000.0m, TakeProfit = 1.035m, StopLoss = 1.0175m },
                 new PumpData() { Symbol = "FTMUSDT", LimitVolume = 9000000.0m, TakeProfit = 1.02m, StopLoss = 1.0125m },
                 new PumpData() { Symbol = "DODOUSDT", LimitVolume = 1500000.0m, TakeProfit = 1.025m, StopLoss = 1.015m }
