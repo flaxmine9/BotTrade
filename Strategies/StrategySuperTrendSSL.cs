@@ -78,7 +78,7 @@ namespace Strategies
             {
                 if (pipeLine.CheckFreePositions())
                 {
-                    var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, 200);
+                    var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, limit: 200);
                     IEnumerable<TradeSignal> signals = GetSignals(klines);
 
                     if (signals.Any())

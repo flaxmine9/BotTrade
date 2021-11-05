@@ -469,10 +469,10 @@ namespace Binance
         /// <param name="symbols">Список валют</param>
         /// <param name="limit">Количество свечей</param>
         /// <returns>Список свечей</returns>
-        public async Task<IEnumerable<IEnumerable<Kline>>> GetKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, int limit)
+        public async Task<IEnumerable<IEnumerable<Kline>>> GetKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, DateTime? startTime = null, DateTime? endTime = null, int limit = 10)
         {
             var klines = (await Task.WhenAll(symbols
-            .Select(symbol => _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit))))
+            .Select(symbol => _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, startTime, endTime, limit: limit))))
                 .Where(x => x.Success)
                 .Select(x => x.Data)
                 .Select((klines, numer) => klines.Select(kline => new Kline()
