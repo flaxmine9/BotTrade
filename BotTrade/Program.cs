@@ -22,7 +22,7 @@ namespace FlaxTrade
             clientFlax.AddStrategy(new Scalping
                 (
                     new TradeSetting(TimeFrame.FiveMinutes, takeProfit: 1.02m, stopLoss: 1.02m, leverage: 2, futuresMarginType: "Isolated",
-                        maxOrders: 8, balanceUSDT: 11.0m, maxPositions: 1)
+                        maxOrders: 8, balanceUSDT: 9.0m, maxPositions: 1)
                 ));
 
             clientFlax.StartStrategies();
