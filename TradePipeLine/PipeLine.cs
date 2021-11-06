@@ -35,8 +35,9 @@ namespace TradePipeLine
         private readonly object locker = new object();
         private bool _waitAfterExitPosition { get; set; } = false;
         private string _nameStrategy { get; set; }
+        private int _delayMilliseconds { get; set; }
 
-        public PipeLine(Trade trade, User user, ApplicationContext db, string nameStrategy, bool waitAfterExitPosition)
+        public PipeLine(Trade trade, User user, ApplicationContext db, string nameStrategy, bool waitAfterExitPosition, int delayMilliseconds)
         {
             _bufferFailedPosition = new();
             _bufferFailedEntryMarket = new();
@@ -56,6 +57,7 @@ namespace TradePipeLine
 
             _nameStrategy = nameStrategy;
             _waitAfterExitPosition = waitAfterExitPosition;
+            _delayMilliseconds = delayMilliseconds;
         }
 
         public void AddSignal(TradeSignal tradeSignal)
@@ -206,7 +208,7 @@ namespace TradePipeLine
             {
                 try
                 {
-                    IEnumerable<BinanceFuturesOrder> finishedOrders = await _trade.ControlOrders(placedOrders, 1000);
+                    IEnumerable<BinanceFuturesOrder> finishedOrders = await _trade.ControlOrders(placedOrders, _delayMilliseconds);
                     if (finishedOrders.Any())
                     {
                         Console.WriteLine($"User: {_user.Name} -- выполнились ордера по валюте: {finishedOrders.First().Symbol}");
