@@ -48,7 +48,7 @@ namespace Strategies
 
         public async Task Logic()
         {
-            PipeLine pipeLine = new PipeLine(_trade, _user, _dataBase, _nameStrategy, waitAfterExitPosition: true);
+            PipeLine pipeLine = new PipeLine(_trade, _user, _dataBase, _nameStrategy, waitAfterExitPosition: true, 1000);
 
             pipeLine.Create();
 
