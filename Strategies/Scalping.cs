@@ -2,6 +2,7 @@
 using DataBase;
 using DataBase.Models;
 using Microsoft.EntityFrameworkCore;
+using Skender.Stock.Indicators;
 using Strategies.Models;
 using Strategy.Interfaces;
 using System;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TechnicalIndicator.Models;
+using TechnicalIndicator.Trend;
 using TradeBinance;
 using TradeBinance.Models;
 using TradePipeLine;
@@ -25,19 +27,20 @@ namespace Strategies
         private User _user { get; set; }
         private ApplicationContext _dataBase { get; set; }
 
-        private List<PumpData> _pumpData { get; set; }
+        private ROC _roc { get; set; }
+        private List<string> _symbols { get; set; }
 
         public Scalping(TradeSetting tradeSetting)
         {
             _tradeSetting = tradeSetting;
+            _roc = new ROC();
 
-            _pumpData = new List<PumpData> 
+            _symbols = new List<string>() 
             { 
-                new PumpData() { Symbol = "KEEPUSDT", LimitVolume = 2000000.0m, TakeProfit = 1.025m, StopLoss = 1.015m },
-                new PumpData() { Symbol = "IOTXUSDT", LimitVolume = 20000000.0m, TakeProfit = 1.0125m, StopLoss = 1.0125m },
-                new PumpData() { Symbol = "COTIUSDT", LimitVolume = 10000000.0m, TakeProfit = 1.035m, StopLoss = 1.0175m },
-                new PumpData() { Symbol = "FTMUSDT", LimitVolume = 9000000.0m, TakeProfit = 1.02m, StopLoss = 1.0125m },
-                new PumpData() { Symbol = "DODOUSDT", LimitVolume = 1500000.0m, TakeProfit = 1.025m, StopLoss = 1.015m }
+                "SKLUSDT", "ALICEUSDT", "REEFUSDT", "AKROUSDT", "BCHUSDT", "XTZUSDT",
+                "ARPAUSDT", "DODOUSDT", "VETUSDT", "ATOMUSDT", "ETCUSDT", "KAVAUSDT",
+                "DENTUSDT", "OCEANUSDT", "HOTUSDT", "CVCUSDT", "OGNUSDT", "DOTUSDT",
+                "ONEUSDT", "GALAUSDT", "IOTXUSDT"
             };
         }
 
@@ -45,7 +48,7 @@ namespace Strategies
         {
             #region new logic
 
-            PipeLine pipeLine = new PipeLine(_trade, _user, _dataBase, _nameStrategy, waitAfterExitPosition: true);
+            PipeLine pipeLine = new PipeLine(_trade, _user, _dataBase, _nameStrategy, waitAfterExitPosition: true, 100);
 
             pipeLine.Create();
 
@@ -53,11 +56,9 @@ namespace Strategies
             {
                 try
                 {
-
-
                     if (pipeLine.CheckFreePositions())
                     {
-                        var klines = await _trade.GetLstKlinesAsync(_pumpData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
+                        var klines = await _trade.GetLstKlinesAsync(_symbols, (KlineInterval)_tradeSetting.TimeFrame, limit: 11);
                         if (klines.Any())
                         {
                             IEnumerable<TradeSignal> signals = GetSignals(klines);
@@ -103,7 +104,7 @@ namespace Strategies
             _dataBase = dataBase;
 
             await _trade.SetExchangeInformationAsync();
-            await _trade.SetTradeSettings(_pumpData.Select(x => x.Symbol));
+            await _trade.SetTradeSettings(_symbols);
 
             _user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(nameUser));
             if (_user != null)
@@ -117,14 +118,16 @@ namespace Strategies
         private IEnumerable<TradeSignal> GetSignals(IEnumerable<IEnumerable<Kline>> klines)
         {
             List<TradeSignal> signals = new();
-
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
-                decimal limitVolume = _pumpData.Where(x => x.Symbol.Equals(lstKlines.Last().Symbol)).First().LimitVolume;
+                // среднее значение объема 5 свечей перед формирующей на данный момент свечи
+                decimal averageVolumes = lstKlines.SkipLast(1).TakeLast(5).Average(x => x.QuoteVolume);
 
-                if (lstKlines.Last().BaseVolume >= limitVolume)
+                if (lstKlines.Last().QuoteVolume >= averageVolumes * 2.0m)
                 {
-                    if (lstKlines.Last().Close > lstKlines.Last().Open)
+                    List<RocResult> roc = _roc.GetRoc(lstKlines, 9).ToList();
+
+                    if (roc.Last().Roc.Value >= 1.65m)
                     {
                         signals.Add(new TradeSignal()
                         {
@@ -133,7 +136,7 @@ namespace Strategies
                             TypePosition = TypePosition.Long
                         });
                     }
-                    else if (lstKlines.Last().Close < lstKlines.Last().Open)
+                    else if (roc.Last().Roc.Value <= -1.65m)
                     {
                         signals.Add(new TradeSignal()
                         {
