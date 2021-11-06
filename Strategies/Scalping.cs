@@ -54,28 +54,31 @@ namespace Strategies
                 if (pipeLine.CheckFreePositions())
                 {
                     var klines = await _trade.GetLstKlinesAsync(_pumpData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
-                    IEnumerable<TradeSignal> signals = GetSignals(klines);
-
-                    if (signals.Any())
+                    if (klines.Any())
                     {
-                        var balanceUSDT = await _trade.GetBalanceAsync();
-                        if (balanceUSDT != -1)
-                        {
-                            foreach (TradeSignal signal in signals)
-                            {
-                                if (balanceUSDT >= _tradeSetting.BalanceUSDT)
-                                {
-                                    if (pipeLine.CheckFreePositions())
-                                    {
-                                        balanceUSDT -= _tradeSetting.BalanceUSDT;
+                        IEnumerable<TradeSignal> signals = GetSignals(klines);
 
-                                        pipeLine.AddSignal(signal);
+                        if (signals.Any())
+                        {
+                            var balanceUSDT = await _trade.GetBalanceAsync();
+                            if (balanceUSDT != -1)
+                            {
+                                foreach (TradeSignal signal in signals)
+                                {
+                                    if (balanceUSDT >= _tradeSetting.BalanceUSDT)
+                                    {
+                                        if (pipeLine.CheckFreePositions())
+                                        {
+                                            balanceUSDT -= _tradeSetting.BalanceUSDT;
+
+                                            pipeLine.AddSignal(signal);
+                                        }
                                     }
+                                    else { Console.WriteLine($"User: {_user.Name}. Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
                                 }
-                                else { Console.WriteLine($"User: {_user.Name}. Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
                             }
+                            else { continue; }
                         }
-                        else { continue; }
                     }
                 }
                 await Task.Delay(50);
