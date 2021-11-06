@@ -96,7 +96,7 @@ namespace Binance
             // quantityForOneLimitOrder количество на один лимитный ордер
 
             // распределяем 65% количества монет на 3 ордера, а 35% на оставишеся ордера (maxOrder - 3)
-            decimal halfQuantityOfPosition = Math.Abs(position.Quantity) * 0.6m;
+            decimal halfQuantityOfPosition = Math.Abs(position.Quantity) * 0.5m;
             halfQuantityOfPosition -= halfQuantityOfPosition % echange.LotSizeFilter.MinQuantity;
 
             decimal ostatolQuantityOfPosition = Math.Abs(position.Quantity) - halfQuantityOfPosition;
@@ -168,7 +168,7 @@ namespace Binance
                 for (int i = 0; i < maxOrders; i++)
                 {
                     if (quantityForOneOrder <= minQuantity
-                    && quantityForOneOrder * position.EntryPrice < 5.0m)
+                        && quantityForOneOrder * position.EntryPrice <= 5.1m)
                     {
                         maxOrders -= 1;
                         quantityForOneOrder = Math.Abs(position.Quantity) / maxOrders;
@@ -181,7 +181,7 @@ namespace Binance
                 for (int i = 0; i < maxOrders; i++)
                 {
                     if (quantityForOneOrder <= minQuantity
-                    && quantityForOneOrder * position.EntryPrice / takeProfit <= 5.0m)
+                        && quantityForOneOrder * position.EntryPrice / takeProfit <= 5.1m)
                     {
                         maxOrders -= 1;
                         quantityForOneOrder = Math.Abs(position.Quantity) / maxOrders;
