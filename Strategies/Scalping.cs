@@ -51,37 +51,46 @@ namespace Strategies
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                if (pipeLine.CheckFreePositions())
+                try
                 {
-                    var klines = await _trade.GetLstKlinesAsync(_pumpData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
-                    if (klines.Any())
+
+
+                    if (pipeLine.CheckFreePositions())
                     {
-                        IEnumerable<TradeSignal> signals = GetSignals(klines);
-
-                        if (signals.Any())
+                        var klines = await _trade.GetLstKlinesAsync(_pumpData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
+                        if (klines.Any())
                         {
-                            var balanceUSDT = await _trade.GetBalanceAsync();
-                            if (balanceUSDT != -1)
-                            {
-                                foreach (TradeSignal signal in signals)
-                                {
-                                    if (balanceUSDT >= _tradeSetting.BalanceUSDT)
-                                    {
-                                        if (pipeLine.CheckFreePositions())
-                                        {
-                                            balanceUSDT -= _tradeSetting.BalanceUSDT;
+                            IEnumerable<TradeSignal> signals = GetSignals(klines);
 
-                                            pipeLine.AddSignal(signal);
+                            if (signals.Any())
+                            {
+                                var balanceUSDT = await _trade.GetBalanceAsync();
+                                if (balanceUSDT != -1)
+                                {
+                                    foreach (TradeSignal signal in signals)
+                                    {
+                                        if (balanceUSDT >= _tradeSetting.BalanceUSDT)
+                                        {
+                                            if (pipeLine.CheckFreePositions())
+                                            {
+                                                balanceUSDT -= _tradeSetting.BalanceUSDT;
+
+                                                pipeLine.AddSignal(signal);
+                                            }
                                         }
+                                        else { Console.WriteLine($"User: {_user.Name}. Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
                                     }
-                                    else { Console.WriteLine($"User: {_user.Name}. Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
                                 }
+                                else { continue; }
                             }
-                            else { continue; }
                         }
                     }
+                    await Task.Delay(50);
                 }
-                await Task.Delay(50);
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
 
             #endregion
