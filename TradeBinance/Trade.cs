@@ -229,7 +229,7 @@ namespace TradeBinance
 
             BinanceFuturesUsdtSymbol symbolInfo = _binanceInteraction.GetInfo(position.Symbol);
 
-            OrderInfo orderInfo = _binanceInteraction.CalculateQuantity2(position, _tradeSetting.TakeProfit, _tradeSetting.MaxOrders);
+            OrderInfo orderInfo = _binanceInteraction.CalculateQuantity(position, _tradeSetting.TakeProfit, _tradeSetting.MaxOrders);
 
             decimal percentBetweenOrders = _binanceInteraction.CountPercenBetweenOrders(_tradeSetting.TakeProfit, orderInfo.QuantityOrders);
 
