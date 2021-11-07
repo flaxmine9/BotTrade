@@ -200,6 +200,71 @@ namespace Binance
             return orderInfo;
         }
 
+        public OrderInfo CalculateQuantity3(BinancePositionDetailsUsdt position, decimal takeProfit, int maxOrders)
+        {
+            OrderInfo orderInfo = new OrderInfo() { QuantitiesAsset = new List<decimal>() };
+
+            var exchange = GetInfo(position.Symbol);
+            var minQuantity = exchange.LotSizeFilter.MinQuantity;
+
+            if (position.Quantity > 0)
+            {
+                for (uint i = 0; i < uint.MaxValue; i++)
+                {
+                    decimal dollars = minQuantity * position.EntryPrice;
+                    if(dollars <= 5.1m)
+                    {
+                        minQuantity += exchange.LotSizeFilter.MinQuantity;
+                    }
+                    else { break; }
+                }
+            }
+            else
+            {
+                decimal priceWithTakeProfit = position.EntryPrice / takeProfit;
+
+                for (uint i = 0; i < uint.MaxValue; i++)
+                {
+                    if (minQuantity * priceWithTakeProfit <= 5.1m)
+                    {
+                        minQuantity += exchange.LotSizeFilter.MinQuantity;
+                    }
+                    else { break; }
+                }
+            }
+
+            decimal quantityOrders = Math.Abs(position.Quantity) / minQuantity;
+            quantityOrders -= quantityOrders % 0.1m;
+
+            decimal resultQuantity = minQuantity;
+
+            if(quantityOrders > maxOrders)
+            {
+                quantityOrders = maxOrders;
+
+                for (int i = maxOrders; i > 2; i--)
+                {
+                    if((takeProfit - 1.0m) / i > 0.0002m)
+                    {
+                        resultQuantity = Math.Abs(position.Quantity) / i;
+                        resultQuantity -= resultQuantity % exchange.LotSizeFilter.MinQuantity;
+
+                        break;
+                    }
+                    else { quantityOrders = i; }
+                }
+            }
+
+            List<decimal> quantities = new List<decimal>();
+
+            for (int i = 0; i < quantityOrders; i++)
+            {
+                quantities.Add(resultQuantity);
+            }
+
+            return new OrderInfo() { QuantitiesAsset = quantities, QuantityOrders = quantities.Count };
+        }
+
 
         /// <summary>
         /// Применяем условия биржи для количества валюты
@@ -470,7 +535,7 @@ namespace Binance
         /// <param name="limit">Количество свечей</param>
         /// <returns>Список свечей</returns>
         public async Task<IEnumerable<IEnumerable<Kline>>> GetKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, DateTime? startTime = null, DateTime? endTime = null, int limit = 10)
-        {
+        {            
             var klines = (await Task.WhenAll(symbols
             .Select(symbol => _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, startTime, endTime, limit: limit))))
                 .Where(x => x.Success)
