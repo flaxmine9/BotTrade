@@ -1,7 +1,6 @@
 ﻿using Binance;
 using Binance.Models;
 using Binance.Net.Enums;
-using Binance.Net.Interfaces;
 using Binance.Net.Objects.Futures.FuturesData;
 using Binance.Net.Objects.Futures.MarketData;
 using System;
@@ -229,7 +228,7 @@ namespace TradeBinance
 
             BinanceFuturesUsdtSymbol symbolInfo = _binanceInteraction.GetInfo(position.Symbol);
 
-            OrderInfo orderInfo = _binanceInteraction.CalculateQuantity(position, _tradeSetting.TakeProfit, _tradeSetting.MaxOrders);
+            OrderInfo orderInfo = _binanceInteraction.CalculateQuantity3(position, _tradeSetting.TakeProfit, _tradeSetting.MaxOrders);
 
             decimal percentBetweenOrders = _binanceInteraction.CountPercenBetweenOrders(_tradeSetting.TakeProfit, orderInfo.QuantityOrders);
 
@@ -241,7 +240,7 @@ namespace TradeBinance
                 LimitOrders = new List<BinanceFuturesBatchOrder>()
             };
 
-            decimal priceTakeProfitMarket = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / _tradeSetting.TakeProfit / 1.0004m : position.EntryPrice * _tradeSetting.TakeProfit * 1.0004m;
+            decimal priceTakeProfitMarket = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / _tradeSetting.TakeProfit : position.EntryPrice * _tradeSetting.TakeProfit;
             decimal priceStopMarket = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice * _tradeSetting.StopLoss : position.EntryPrice / _tradeSetting.StopLoss;
 
             gridOrder.ClosePositionOrders.AddRange(new List<BinanceFuturesPlacedOrder>()
@@ -268,7 +267,7 @@ namespace TradeBinance
 
             for (short i = 0; i < orderInfo.QuantityOrders - 1; i++)
             {
-                decimal price = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / (1 + percentBetweenOrders * (i + 1)) / 1.0004m : position.EntryPrice * (1 + percentBetweenOrders * (i + 1)) * 1.0004m;
+                decimal price = orderSide.Equals(OrderSide.Buy) ? position.EntryPrice / (1 + percentBetweenOrders * (i + 1)) : position.EntryPrice * (1 + percentBetweenOrders * (i + 1));
                 price -= price % symbolInfo.PriceFilter.TickSize;
 
                 gridOrder.LimitOrders.Add(new BinanceFuturesBatchOrder()
@@ -294,8 +293,8 @@ namespace TradeBinance
         public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, DateTime? startTime = null, DateTime? endTime = null, int limit = 10)
         {
             return await _binanceInteraction.GetKlinesAsync(symbols, klineInterval, startTime, endTime, limit: limit);
-        }
-
+        } 
+        
         public async Task<string> EntryMarket(string symbol, decimal price, decimal balanceUSDT, TypePosition typePosition)
         {
             var info = _binanceInteraction.GetInfo(symbol);
