@@ -3,7 +3,6 @@ using DataBase;
 using DataBase.Models;
 using Microsoft.EntityFrameworkCore;
 using Skender.Stock.Indicators;
-using Strategies.Models;
 using Strategy.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -37,10 +36,10 @@ namespace Strategies
 
             _symbols = new List<string>() 
             { 
-                "SKLUSDT", "ALICEUSDT", "REEFUSDT", "AKROUSDT", "BCHUSDT", "XTZUSDT",
-                "ARPAUSDT", "DODOUSDT", "VETUSDT", "ATOMUSDT", "ETCUSDT", "KAVAUSDT",
-                "DENTUSDT", "OCEANUSDT", "HOTUSDT", "CVCUSDT", "OGNUSDT", "DOTUSDT",
-                "ONEUSDT", "GALAUSDT", "IOTXUSDT"
+                "SKLUSDT", "ALICEUSDT", "REEFUSDT",
+                "DODOUSDT", "VETUSDT", "DENTUSDT", "OCEANUSDT", 
+                "HOTUSDT", "CVCUSDT", "OGNUSDT", "DOTUSDT",
+                "ONEUSDT", "IOTXUSDT"
             };
         }
 
@@ -58,7 +57,7 @@ namespace Strategies
                 {
                     if (pipeLine.CheckFreePositions())
                     {
-                        var klines = await _trade.GetLstKlinesAsync(_symbols, (KlineInterval)_tradeSetting.TimeFrame, limit: 11);
+                        var klines = await _trade.GetLstKlinesAsync(_symbols, (KlineInterval)_tradeSetting.TimeFrame, limit: 26);
                         if (klines.Any())
                         {
                             IEnumerable<TradeSignal> signals = GetSignals(klines);
@@ -86,7 +85,7 @@ namespace Strategies
                             }
                         }
                     }
-                    await Task.Delay(50);
+                    await Task.Delay(100);
                 }
                 catch (Exception ex)
                 {
@@ -121,13 +120,13 @@ namespace Strategies
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
                 // среднее значение объема 5 свечей перед формирующей на данный момент свечи
-                decimal averageVolumes = lstKlines.SkipLast(1).TakeLast(5).Average(x => x.QuoteVolume);
+                decimal averageVolumes = lstKlines.SkipLast(1).TakeLast(10).Average(x => x.QuoteVolume);
 
                 if (lstKlines.Last().QuoteVolume >= averageVolumes * 2.0m)
                 {
-                    List<RocResult> roc = _roc.GetRoc(lstKlines, 9).ToList();
+                    List<RocResult> roc = _roc.GetRoc(lstKlines, 25).ToList();
 
-                    if (roc.Last().Roc.Value >= 1.65m)
+                    if (roc.Last().Roc.Value >= 2.5m && lstKlines.Last().Close / lstKlines.Last().Open >= 1.008m)
                     {
                         signals.Add(new TradeSignal()
                         {
@@ -136,7 +135,7 @@ namespace Strategies
                             TypePosition = TypePosition.Long
                         });
                     }
-                    else if (roc.Last().Roc.Value <= -1.65m)
+                    else if (roc.Last().Roc.Value <= -2.5m && lstKlines.Last().Open / lstKlines.Last().Close >= 1.008m)
                     {
                         signals.Add(new TradeSignal()
                         {
