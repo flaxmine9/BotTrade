@@ -37,9 +37,9 @@ namespace Strategies
             _symbols = new List<string>() 
             { 
                 "SKLUSDT", "ALICEUSDT", "REEFUSDT",
-                "DODOUSDT", "VETUSDT", "DENTUSDT", "OCEANUSDT", 
-                "HOTUSDT", "CVCUSDT", "OGNUSDT", "DOTUSDT",
-                "ONEUSDT", "IOTXUSDT"
+                "DODOUSDT", "VETUSDT", "DENTUSDT", 
+                "OCEANUSDT", "CVCUSDT", "OGNUSDT", 
+                "DOTUSDT", "ONEUSDT", "IOTXUSDT"
             };
         }
 
@@ -57,10 +57,12 @@ namespace Strategies
                 {
                     if (pipeLine.CheckFreePositions())
                     {
-                        var klines = await _trade.GetLstKlinesAsync(_symbols, (KlineInterval)_tradeSetting.TimeFrame, limit: 26);
+                        var symbolsWithOutRunning = _symbols.Except(pipeLine.GetRunningPositions());
+
+                        var klines = await _trade.GetLstKlinesAsync(symbolsWithOutRunning, (KlineInterval)_tradeSetting.TimeFrame, limit: 26);
                         if (klines.Any())
                         {
-                            IEnumerable<TradeSignal> signals = GetSignals(klines);
+                            List<TradeSignal> signals = GetSignals(klines).ToList();
 
                             if (signals.Any())
                             {
