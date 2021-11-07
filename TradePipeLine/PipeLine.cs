@@ -79,6 +79,19 @@ namespace TradePipeLine
             }
         }
 
+        public List<string> GetRunningPositions()
+        {
+            lock (locker)
+            {
+                if (_runningPositions.Any())
+                {
+                    return _runningPositions.Select(x => x.Symbol).ToList();
+                }
+            }
+
+            return new List<string>() { };
+        }
+
         public bool CheckFreePositions()
         {
             bool check = true;
