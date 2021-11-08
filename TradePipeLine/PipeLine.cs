@@ -349,6 +349,17 @@ namespace TradePipeLine
 
                 Console.WriteLine($"Валюта: {symbol} -- Не удалось получить текущую позицию за 5 попыток");
 
+                var result = await _trade.ClosePosition(symbol);
+                if (result)
+                {
+                    Console.WriteLine($"Закрыли позицию по валюте {symbol} после попыток получения позиции!");
+                    DeletePosition(symbol);
+                }
+                else
+                {
+                    Console.WriteLine($"Не удалось закрыть позицию по валюте {symbol} после попыток получения позиции!");
+                }
+
                 return position;
 
             }, new ExecutionDataflowBlockOptions
@@ -361,26 +372,41 @@ namespace TradePipeLine
             var tryExecuteFailedPlaceOrders = new TransformBlock<GridOrder, IEnumerable<BinanceFuturesPlacedOrder>>(async gridOrders =>
             {
                 List<BinanceFuturesPlacedOrder> lst = new();
-
-                Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаемся поставить ордера 5 раз");
-                for (int i = 0; i < 5; i++)
+                try
                 {
-                    IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
-                    if (placedOrders.Any())
+                    Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаемся поставить ордера 5 раз");
+                    for (int i = 0; i < 5; i++)
                     {
-                        Console.WriteLine($"Валюта: {placedOrders.First().Symbol} -- Поставили failed orders");
+                        IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
+                        if (placedOrders.Any())
+                        {
+                            Console.WriteLine($"Валюта: {placedOrders.First().Symbol} -- Поставили failed orders");
 
-                        lst.AddRange(placedOrders);
-
-                        break;
+                            return placedOrders;
+                        }
                     }
+
+                    Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Не удалось выставить ордера за 5 попыток");
+
+                    var result = await _trade.ClosePosition(gridOrders.ClosePositionOrders.First().Symbol);
+                    if (result)
+                    {
+                        Console.WriteLine($"Закрыли позицию по валюте {gridOrders.ClosePositionOrders.First().Symbol} после попыток выставления ордеров!");
+                        DeletePosition(gridOrders.ClosePositionOrders.First().Symbol);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Не удалось закрыть позицию по валюте {gridOrders.ClosePositionOrders.First().Symbol} после попыток выставления ордеров!");
+                    }
+
+                    return lst;
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка в блоке tryExecuteFailedPlaceOrders, {ex.Message}");
 
-                Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Не удалось выставить ордера за 5 попыток");
-
-                DeletePosition(gridOrders.ClosePositionOrders.First().Symbol);
-
-                return lst;
+                    return lst;
+                }
 
             }, new ExecutionDataflowBlockOptions
             {
