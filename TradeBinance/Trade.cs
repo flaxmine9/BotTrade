@@ -33,6 +33,16 @@ namespace TradeBinance
             await _binanceInteraction.GetExchangeInformationAsync();
         }
 
+        public async Task<bool> ClosePosition(string symbol)
+        {
+            var result = await _binanceInteraction.ClosePosition(symbol);
+            if (result != null)
+            {
+                return true;
+            }
+            else { return false; }
+        }
+
         public async Task<IEnumerable<BinanceFuturesPlacedOrder>> PlaceOrders(GridOrder gridOrders)
         {
             var taskPlacedStopOrders = _binanceInteraction.PlaceClosePositionOrdersAsync(gridOrders.ClosePositionOrders);
