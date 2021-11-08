@@ -24,14 +24,16 @@ namespace Binance
             {
                 _binanceClient = new BinanceClient(new BinanceClientOptions()
                 {
-                    ApiCredentials = new ApiCredentials(key, secretKey)
+                    ApiCredentials = new ApiCredentials(key, secretKey),
+                    ReceiveWindow = TimeSpan.FromSeconds(15)
                 });
             }
             else
             {
                 _binanceClient = new BinanceClient(new BinanceClientOptions(BinanceApiAddresses.TestNet)
                 {
-                    ApiCredentials = new ApiCredentials(key, secretKey)
+                    ApiCredentials = new ApiCredentials(key, secretKey),
+                    ReceiveWindow = TimeSpan.FromSeconds(15)
                 });
             }
         }
@@ -466,10 +468,21 @@ namespace Binance
 
         public async Task<BinanceFuturesPlacedOrder> MarketPlaceOrderAsync(string symbol, decimal quantity, OrderSide orderSide)
         {
-            var marketOrder = await _binanceClient.FuturesUsdt.Order.PlaceOrderAsync(symbol, orderSide, OrderType.Market, quantity);
+            var marketOrder = await _binanceClient.FuturesUsdt.Order.PlaceOrderAsync(symbol, orderSide, OrderType.Market, quantity, receiveWindow: 15000);
             if (marketOrder.Success)
             {
                 return marketOrder.Data;
+            }
+
+            return null;
+        }
+
+        public async Task<BinanceFuturesPlacedOrder> ClosePosition(string symbol)
+        {
+            BinancePositionDetailsUsdt position = await GetCurrentOpenPositionAsync(symbol);
+            if (position != null)
+            {
+                return await MarketPlaceOrderAsync(position.Symbol, Math.Abs(position.Quantity), position.Quantity > 0 ? OrderSide.Sell : OrderSide.Buy);
             }
 
             return null;
