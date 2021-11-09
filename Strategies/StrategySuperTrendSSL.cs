@@ -57,8 +57,8 @@ namespace Strategies
 
                 #region Test data
 
-                new SuperTrendSSLData() { Symbol = "BTCUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
-                new SuperTrendSSLData() { Symbol = "ETHUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
+                //new SuperTrendSSLData() { Symbol = "BTCUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
+                //new SuperTrendSSLData() { Symbol = "ETHUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
                 //new SuperTrendSSLData() { Symbol = "BCHUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
                 //new SuperTrendSSLData() { Symbol = "XMRUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
                 //new SuperTrendSSLData() { Symbol = "COMPUSDT", Period = 2, ATRMultiplier = 2, ATRPeriod = 2 },
@@ -78,7 +78,9 @@ namespace Strategies
             {
                 if (pipeLine.CheckFreePositions())
                 {
-                    var klines = await _trade.GetLstKlinesAsync(_superTrendSSLData.Select(x => x.Symbol), (KlineInterval)_tradeSetting.TimeFrame, limit: 200);
+                    var symbolsWithOutRunning = _superTrendSSLData.Select(x => x.Symbol).Except(pipeLine.GetRunningPositions());
+
+                    var klines = await _trade.GetLstKlinesAsync(symbolsWithOutRunning, (KlineInterval)_tradeSetting.TimeFrame, limit: 200);
                     IEnumerable<TradeSignal> signals = GetSignals(klines);
 
                     if (signals.Any())

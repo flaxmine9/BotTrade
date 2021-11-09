@@ -3,11 +3,11 @@ using DataBase;
 using DataBase.Models;
 using Microsoft.EntityFrameworkCore;
 using Skender.Stock.Indicators;
+using Strategies.Data;
 using Strategy.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using TechnicalIndicator.Models;
 using TechnicalIndicator.Oscillator;
@@ -18,9 +18,9 @@ using TradePipeLine;
 
 namespace Strategies
 {
-    public class Strategy2 : IStrategy
+    public class Butenko : IStrategy
     {
-        private string _nameStrategy { get; set; } = "Scalping";
+        private string _nameStrategy { get; set; } = "Butenko";
 
         private TradeSetting _tradeSetting { get; set; }
         private Trade _trade { get; set; }
@@ -35,16 +35,29 @@ namespace Strategies
         private EMA _ema { get; set; }
         private SuperTrend _superTrend { get; set; }
 
-        public Strategy2(TradeSetting tradeSetting)
+        #endregion
+
+        private List<ButenkoData> _data { get; set; }
+
+        public Butenko(TradeSetting tradeSetting)
         {
             _tradeSetting = tradeSetting;
 
             _macd = new MACD();
             _ema = new EMA();
             _superTrend = new SuperTrend();
-        }
 
-        #endregion
+            _data = new List<ButenkoData>()
+            {
+                new ButenkoData() { Symbol = "ETHUSDT", EmaFast = 30, EmaSLow = 50, AtrMult = 4.5m, AtrPeriod = 14, MacdFastPeriod = 12, MacdSlowPeriod = 26 },
+                new ButenkoData() { Symbol = "BNBUSDT", EmaFast = 40, EmaSLow = 70, AtrMult = 3.1m, AtrPeriod = 18, MacdFastPeriod = 12, MacdSlowPeriod = 26 },
+                new ButenkoData() { Symbol = "DOTUSDT", EmaFast = 35, EmaSLow = 110, AtrMult = 3.7m, AtrPeriod = 26, MacdFastPeriod = 12, MacdSlowPeriod = 26 },
+                new ButenkoData() { Symbol = "XRPUSDT", EmaFast = 30, EmaSLow = 120, AtrMult = 4.1m, AtrPeriod = 28, MacdFastPeriod = 12, MacdSlowPeriod = 26 },
+                new ButenkoData() { Symbol = "LINKUSDT", EmaFast = 15, EmaSLow = 90, AtrMult = 5.7m, AtrPeriod = 14, MacdFastPeriod = 12, MacdSlowPeriod = 26 },
+                new ButenkoData() { Symbol = "LTCUSDT", EmaFast = 25, EmaSLow = 90, AtrMult = 6.9m, AtrPeriod = 16, MacdFastPeriod = 12, MacdSlowPeriod = 26 },
+                new ButenkoData() { Symbol = "FLMUSDT", EmaFast = 30, EmaSLow = 60, AtrMult = 6.4m, AtrPeriod = 26, MacdFastPeriod = 12, MacdSlowPeriod = 26 }
+            };
+        }
 
         public async Task Logic()
         {
@@ -54,38 +67,47 @@ namespace Strategies
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                if (pipeLine.CheckFreePositions())
+                try
                 {
-                    var klines = await _trade.GetLstKlinesAsync(new List<string>() { "LTCUSDT" }, (KlineInterval)_tradeSetting.TimeFrame, limit: 150);
-
-                    //var klines = await _trade.GetLstKlinesAsync(new List<string>() { "LTCUSDT" }, (KlineInterval)_tradeSetting.TimeFrame,
-                    //    startTime: new DateTime(2021, 11, 1, 10, 55, 0), new DateTime(2021, 11, 2, 7, 0, 0), limit: 250);
-
-                    IEnumerable<TradeSignal> signals = GetSignals(klines);
-
-                    if (signals.Any())
+                    if (pipeLine.CheckFreePositions())
                     {
-                        var balanceUSDT = await _trade.GetBalanceAsync();
-                        if (balanceUSDT != -1)
-                        {
-                            foreach (TradeSignal signal in signals)
-                            {
-                                if (balanceUSDT >= _tradeSetting.BalanceUSDT)
-                                {
-                                    if (pipeLine.CheckFreePositions())
-                                    {
-                                        balanceUSDT -= _tradeSetting.BalanceUSDT;
+                        var symbolsWithOutRunning = _data.Select(x => x.Symbol).Except(pipeLine.GetRunningPositions());
 
-                                        pipeLine.AddSignal(signal);
+                        var klines = await _trade.GetLstKlinesAsync(symbolsWithOutRunning, (KlineInterval)_tradeSetting.TimeFrame, limit: 250);
+
+                        if (klines.Any())
+                        {
+                            IEnumerable<TradeSignal> signals = GetSignals(klines);
+
+                            if (signals.Any())
+                            {
+                                var balanceUSDT = await _trade.GetBalanceAsync();
+                                if (balanceUSDT != -1)
+                                {
+                                    foreach (TradeSignal signal in signals)
+                                    {
+                                        if (balanceUSDT >= _tradeSetting.BalanceUSDT)
+                                        {
+                                            if (pipeLine.CheckFreePositions())
+                                            {
+                                                balanceUSDT -= _tradeSetting.BalanceUSDT;
+
+                                                pipeLine.AddSignal(signal);
+                                            }
+                                        }
+                                        else { Console.WriteLine($"User: {_user.Name}. Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
                                     }
                                 }
-                                else { Console.WriteLine($"User: {_user.Name}. Баланс меньше {_tradeSetting.BalanceUSDT}"); break; }
+                                else { continue; }
                             }
                         }
-                        else { continue; }
                     }
+                    await WaitTime(_data.First().Symbol);
                 }
-                await WaitTime();
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
         }
 
@@ -95,7 +117,7 @@ namespace Strategies
             _dataBase = dataBase;
 
             await _trade.SetExchangeInformationAsync();
-            //await _trade.SetTradeSettings(null);
+            await _trade.SetTradeSettings(_data.Select(x => x.Symbol));
 
             _user = await _dataBase.Users.FirstOrDefaultAsync(x => x.Name.Equals(nameUser));
             if (_user != null)
@@ -119,12 +141,14 @@ namespace Strategies
 
                 IEnumerable<Kline> withOutLastKline = lstKlines.SkipLast(1);
 
-                EmaResult fastEma = _ema.GetEma(withOutLastKline, 10).Last();
-                EmaResult lowEma = _ema.GetEma(withOutLastKline, 20).Last();
+                ButenkoData data = _data.Where(x => withOutLastKline.First().Symbol.Equals(x.Symbol)).First();
 
-                MacdResult macd = _macd.GetMACD(withOutLastKline, 12, 26, 9).Last();
+                EmaResult fastEma = _ema.GetEma(withOutLastKline, data.EmaFast).Last();
+                EmaResult lowEma = _ema.GetEma(withOutLastKline, data.EmaSLow).Last();
+
+                MacdResult macd = _macd.GetMACD(withOutLastKline, data.MacdFastPeriod, data.MacdSlowPeriod, 9).Last();
                 
-                List<SuperTrendResult> superTrend = _superTrend.GetSuperTrend(withOutLastKline, 10, multiplier: 3).TakeLast(2).ToList();
+                List<SuperTrendResult> superTrend = _superTrend.GetSuperTrend(withOutLastKline, data.AtrPeriod, multiplier: data.AtrMult).TakeLast(2).ToList();
 
                 if(fastEma.Ema > lowEma.Ema 
                     && withOutLastKline.Last().Close > superTrend.Last().SuperTrend && withOutLastKline.SkipLast(1).Last().Close < superTrend.First().SuperTrend
@@ -146,15 +170,16 @@ namespace Strategies
                         Price = withOutLastKline.Last().Close,
                         Symbol = withOutLastKline.Last().Symbol,
                         TypePosition = TypePosition.Short
-                    });                }
+                    });               
+                }
             }
 
             return signals;
         }
 
-        private async Task WaitTime()
+        private async Task WaitTime(string symbol)
         {
-            var klineForTime = await _trade.GetKlineAsync(null, (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
+            var klineForTime = await _trade.GetKlineAsync(symbol, (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
             if (klineForTime != null)
             {
                 DateTime timeNow = DateTime.Now.ToUniversalTime();

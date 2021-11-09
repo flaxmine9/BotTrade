@@ -37,7 +37,7 @@ namespace Strategies
             _symbols = new List<string>() 
             { 
                 "SKLUSDT", "ALICEUSDT", "REEFUSDT",
-                "DODOUSDT", "VETUSDT", "DENTUSDT", 
+                "DODOUSDT", "DENTUSDT", 
                 "CVCUSDT", "OGNUSDT", "DOTUSDT", 
                 "ONEUSDT", "IOTXUSDT"
             };
@@ -88,7 +88,7 @@ namespace Strategies
                             }
                         }
                     }
-                    await Task.Delay(100);
+                    await Task.Delay(50);
                 }
                 catch (Exception ex)
                 {
@@ -122,32 +122,32 @@ namespace Strategies
             List<TradeSignal> signals = new();
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
-                // среднее значение объема 5 свечей перед формирующей на данный момент свечи
-                //decimal averageVolumes = lstKlines.SkipLast(1).TakeLast(5).Average(x => x.QuoteVolume);
+                if (lstKlines.First().Symbol.Equals("RAYUSDT"))
+                {
+                    continue;
+                }
 
-                //if (lstKlines.Last().QuoteVolume >= averageVolumes * 2.0m)
-                //{
-                    List<RocResult> roc = _roc.GetRoc(lstKlines, 1).ToList();
+                List<RocResult> roc = _roc.GetRoc(lstKlines, 1).ToList();
 
-                    if (roc.Last().Roc.Value >= 1.0m && lstKlines.Last().Close / lstKlines.Last().Open >= 1.005m)
+                if (roc.Last().Roc.Value >= 2.0m)
+                {
+                    signals.Add(new TradeSignal()
                     {
-                        signals.Add(new TradeSignal()
-                        {
-                            Price = lstKlines.Last().Close,
-                            Symbol = lstKlines.Last().Symbol,
-                            TypePosition = TypePosition.Long
-                        });
-                    }
-                    else if (roc.Last().Roc.Value <= -1.0m && lstKlines.Last().Open / lstKlines.Last().Close >= 1.005m)
+                        Price = lstKlines.Last().Close,
+                        Symbol = lstKlines.Last().Symbol,
+                        TypePosition = TypePosition.Long
+                    });
+                }
+                else if (roc.Last().Roc.Value <= -2.0m)
+                {
+                    signals.Add(new TradeSignal()
                     {
-                        signals.Add(new TradeSignal()
-                        {
-                            Price = lstKlines.Last().Close,
-                            Symbol = lstKlines.Last().Symbol,
-                            TypePosition = TypePosition.Short
-                        });
-                    }
-                //}
+                        Price = lstKlines.Last().Close,
+                        Symbol = lstKlines.Last().Symbol,
+                        TypePosition = TypePosition.Short
+                    });
+                }
+
             }
 
             return signals;
