@@ -171,7 +171,7 @@ namespace TradePipeLine
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка в блоке gridOrders\n" +
+                    Console.WriteLine($"User: {_user.Name} -- Ошибка в блоке gridOrders\n" +
                         $"{ex.Message}");
 
                     return null;
@@ -197,7 +197,7 @@ namespace TradePipeLine
 
                         if (await _bufferFailedPlaceOrders.SendAsync(gridOrders))
                         {
-                            Console.WriteLine("Отправили ордера в failed block");
+                            Console.WriteLine("User: {_user.Name} -- Отправили ордера в failed block");
                         }
                     }
 
@@ -205,7 +205,7 @@ namespace TradePipeLine
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка в блоке placeOrders\n" +
+                    Console.WriteLine($"User: {_user.Name} -- Ошибка в блоке placeOrders\n" +
                         $"{ex.Message}");
 
                     return lst;
@@ -221,7 +221,7 @@ namespace TradePipeLine
             {
                 try
                 {
-                    IEnumerable<BinanceFuturesOrder> finishedOrders = await _trade.ControlOrders(placedOrders, _delayMilliseconds);
+                    List<BinanceFuturesOrder> finishedOrders = (await _trade.ControlOrders(placedOrders, _delayMilliseconds)).ToList();
                     if (finishedOrders.Any())
                     {
                         Console.WriteLine($"User: {_user.Name} -- выполнились ордера по валюте: {finishedOrders.First().Symbol}");
@@ -239,7 +239,7 @@ namespace TradePipeLine
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Ошибка в блоке controllOrders\n" +
+                    Console.WriteLine("User: {_user.Name} -- Ошибка в блоке controllOrders\n" +
                         ex.Message);
 
                     return "";
@@ -253,7 +253,7 @@ namespace TradePipeLine
                 IEnumerable<BinanceFuturesUsdtTrade> historyTrades = await _trade.GetTradeHistory(_.Symbol, _.UpdateTime, limit: _tradeSetting.MaxOrders * 5);
                 if (!historyTrades.Any())
                 {
-                    Console.WriteLine($"{_user.Name} -- не удалось получить историю ордерова по валюте {_.Symbol}");
+                    Console.WriteLine($"User: {_user.Name} -- не удалось получить историю ордерова по валюте {_.Symbol}");
                 }
                 else
                 {
@@ -295,7 +295,7 @@ namespace TradePipeLine
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка в блоке writeTradeHistoryToDB\n" +
+                    Console.WriteLine($"User: {_user.Name} -- Ошибка в блоке writeTradeHistoryToDB\n" +
                         $"{ex.Message}");
                 }
 
@@ -333,31 +333,31 @@ namespace TradePipeLine
             {
                 BinancePositionDetailsUsdt position = null;
 
-                Console.WriteLine($"Валюта: {symbol} -- Пытаем получить 5 раз текущую позицию");
+                Console.WriteLine($"User: {_user.Name} -- Валюта: {symbol} -- Пытаем получить 5 раз текущую позицию");
 
                 for (int i = 0; i < 5; i++)
                 {
                     var resultPosition = await _trade.GetCurrentOpenPositionAsync(symbol);
                     if (resultPosition != null)
                     {
-                        Console.WriteLine($"Валюта: {symbol} -- Получили failed position");
+                        Console.WriteLine($"User: {_user.Name} -- Валюта: {symbol} -- Получили failed position");
                         position = resultPosition;
 
                         break;
                     }
                 }
 
-                Console.WriteLine($"Валюта: {symbol} -- Не удалось получить текущую позицию за 5 попыток");
+                Console.WriteLine($"User: {_user.Name} -- Валюта: {symbol} -- Не удалось получить текущую позицию за 5 попыток");
 
                 var result = await _trade.ClosePosition(symbol);
                 if (result)
                 {
-                    Console.WriteLine($"Закрыли позицию по валюте {symbol} после попыток получения позиции!");
+                    Console.WriteLine($"User: {_user.Name} -- Закрыли позицию по валюте {symbol} после попыток получения позиции!");
                     DeletePosition(symbol);
                 }
                 else
                 {
-                    Console.WriteLine($"Не удалось закрыть позицию по валюте {symbol} после попыток получения позиции!");
+                    Console.WriteLine($"User: {_user.Name} -- Не удалось закрыть позицию по валюте {symbol} после попыток получения позиции!");
                 }
 
                 return position;
@@ -374,36 +374,36 @@ namespace TradePipeLine
                 List<BinanceFuturesPlacedOrder> lst = new();
                 try
                 {
-                    Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаемся поставить ордера 5 раз");
+                    Console.WriteLine($"User: {_user.Name} -- Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Пытаемся поставить ордера 5 раз");
                     for (int i = 0; i < 5; i++)
                     {
                         IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
                         if (placedOrders.Any())
                         {
-                            Console.WriteLine($"Валюта: {placedOrders.First().Symbol} -- Поставили failed orders");
+                            Console.WriteLine($"User: {_user.Name} -- Валюта: {placedOrders.First().Symbol} -- Поставили failed orders");
 
                             return placedOrders;
                         }
                     }
 
-                    Console.WriteLine($"Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Не удалось выставить ордера за 5 попыток");
+                    Console.WriteLine($"User: {_user.Name} -- Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Не удалось выставить ордера за 5 попыток");
 
                     var result = await _trade.ClosePosition(gridOrders.ClosePositionOrders.First().Symbol);
                     if (result)
                     {
-                        Console.WriteLine($"Закрыли позицию по валюте {gridOrders.ClosePositionOrders.First().Symbol} после попыток выставления ордеров!");
+                        Console.WriteLine($"User: {_user.Name} -- Закрыли позицию по валюте {gridOrders.ClosePositionOrders.First().Symbol} после попыток выставления ордеров!");
                         DeletePosition(gridOrders.ClosePositionOrders.First().Symbol);
                     }
                     else
                     {
-                        Console.WriteLine($"Не удалось закрыть позицию по валюте {gridOrders.ClosePositionOrders.First().Symbol} после попыток выставления ордеров!");
+                        Console.WriteLine($"User: {_user.Name} -- Не удалось закрыть позицию по валюте {gridOrders.ClosePositionOrders.First().Symbol} после попыток выставления ордеров!");
                     }
 
                     return lst;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Ошибка в блоке tryExecuteFailedPlaceOrders, {ex.Message}");
+                    Console.WriteLine($"User: {_user.Name} -- Ошибка в блоке tryExecuteFailedPlaceOrders, {ex.Message}");
 
                     return lst;
                 }
@@ -416,19 +416,19 @@ namespace TradePipeLine
 
             var tryExecuteFailedEntryMarket = new TransformBlock<TradeSignal, string>(async TradeSignal =>
             {
-                Console.WriteLine($"Валюта: {TradeSignal.Symbol} -- Пытаемся зайти в рынок 5 раз");
+                Console.WriteLine($"User: {_user.Name} -- Валюта: {TradeSignal.Symbol} -- Пытаемся зайти в рынок 5 раз");
                 for (int i = 0; i < 5; i++)
                 {
                     string entriedMarket = await _trade.EntryMarket(TradeSignal.Symbol, price: TradeSignal.Price, _tradeSetting.BalanceUSDT, TradeSignal.TypePosition);
                     if (entriedMarket != null)
                     {
-                        Console.WriteLine($"Валюта: {TradeSignal.Symbol} -- Зашли в failed entry market");
+                        Console.WriteLine($"User: {_user.Name} -- Валюта: {TradeSignal.Symbol} -- Зашли в failed entry market");
 
                         return entriedMarket;
                     }
                 }
 
-                Console.WriteLine($"Валюта: {TradeSignal.Symbol} -- Не удалось зайти в рынок за 5 попыток");
+                Console.WriteLine($"User: {_user.Name} -- Валюта: {TradeSignal.Symbol} -- Не удалось зайти в рынок за 5 попыток");
 
                 DeletePosition(TradeSignal.Symbol);
 
