@@ -547,29 +547,34 @@ namespace Binance
         /// <param name="symbols">Список валют</param>
         /// <param name="limit">Количество свечей</param>
         /// <returns>Список свечей</returns>
-        public async Task<IEnumerable<IEnumerable<Kline>>> GetKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, DateTime? startTime = null, DateTime? endTime = null, int limit = 10)
-        {            
-            var klines = (await Task.WhenAll(symbols
-            .Select(symbol => _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, startTime, endTime, limit: limit))))
-                .Where(x => x.Success)
-                .Select(x => x.Data)
-                .Select((klines, numer) => klines.Select(kline => new Kline()
+        public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, DateTime? startTime = null, DateTime? endTime = null, int limit = 10)
+        {
+            return await Task.WhenAll(symbols.Select(x => GetKlinesAsync(x, klineInterval, startTime, endTime, limit)));
+        }
+
+        public async Task<IEnumerable<Kline>> GetKlinesAsync(string symbol, KlineInterval klineInterval, DateTime? startTime = null, DateTime? endTime = null, int limit = 10)
+        {
+            var klines = await _binanceClient.FuturesUsdt.Market.GetKlinesAsync(symbol, klineInterval, limit: limit);
+            if (klines.Success)
+            {
+                return klines.Data.Select(kline => new Kline
                 {
                     Close = kline.Close,
                     High = kline.High,
                     Low = kline.Low,
-                    Open= kline.Open,
-                    Symbol = symbols.ToList()[numer],
+                    Open = kline.Open,
+                    Symbol = symbol,
                     BaseVolume = kline.BaseVolume,
                     QuoteVolume = kline.QuoteVolume,
                     TakerBuyBaseVolume = kline.TakerBuyBaseVolume,
-                    TakerBuyQuoteVolume= kline.TakerBuyQuoteVolume,
+                    TakerBuyQuoteVolume = kline.TakerBuyQuoteVolume,
                     TradeCount = kline.TradeCount,
                     CloseTime = kline.CloseTime,
                     OpenTime = kline.OpenTime
-                }));
+                });
+            }
 
-            return klines;
+            return new List<Kline>();
         }
 
         public async Task<Kline> GetKlineAsync(string symbol, KlineInterval klineInterval, int limit)
