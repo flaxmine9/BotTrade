@@ -137,7 +137,7 @@ namespace TradeBinance
 
             for (uint i = 0; i < uint.MaxValue; i++)
             {
-                List<BinanceFuturesOrder> newCurrentOpenOrders = (await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false)).ToList();
+                List<BinanceFuturesOrder> newCurrentOpenOrders = (await _binanceInteraction.GetCurrentOpenOrdersAsync(symbol).ConfigureAwait(false)).ToList();             
                 if (newCurrentOpenOrders.Any())
                 {
                     List<BinanceFuturesOrder> exceptedOrders = openCurrentOrders.Except<BinanceFuturesOrder>(newCurrentOpenOrders, _equalityOrder).ToList();
@@ -161,13 +161,13 @@ namespace TradeBinance
                             Console.WriteLine($"{symbol}: StopMarket Order выполнился");
                             Console.WriteLine($"{symbol}: Отменяем все оставшиеся ордера");
 
-                            bool canceledOpenOrders = await _binanceInteraction.CancelOpenOrders(stopMarketOrder.First().Symbol).ConfigureAwait(false);
+                            bool canceledOpenOrders = await _binanceInteraction.CancelOpenOrders(symbol).ConfigureAwait(false);
                             if (canceledOpenOrders)
                             {
                                 Console.WriteLine($"{symbol}: Отменили все оставшиеся ордера");
                                 break;
                             }
-                            else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {stopMarketOrder.First().Symbol}"); continue; }
+                            else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {symbol}"); continue; }
 
                         }
                         else if (takeProfitMarketOrder.Any())
@@ -175,13 +175,13 @@ namespace TradeBinance
                             Console.WriteLine($"{symbol}: ProfitMarket Order выполнился");
                             Console.WriteLine($"{symbol}: Отменяем все оставшиеся ордера");
 
-                            bool canceledTakeProfit = await _binanceInteraction.CancelOpenOrders(takeProfitMarketOrder.First().Symbol).ConfigureAwait(false);
+                            bool canceledTakeProfit = await _binanceInteraction.CancelOpenOrders(symbol).ConfigureAwait(false);
                             if (canceledTakeProfit)
                             {
                                 Console.WriteLine($"{symbol}: Отменили все оставшиеся ордера");
                                 break;
                             }
-                            else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {takeProfitMarketOrder.First().Symbol}"); continue; }
+                            else { Console.WriteLine($"{symbol}: Не удалось отменить открытые ордера по валюте {symbol}"); continue; }
                         }
                         else if (limitOrders.Any())
                         {
@@ -302,7 +302,7 @@ namespace TradeBinance
 
         public async Task<IEnumerable<IEnumerable<Kline>>> GetLstKlinesAsync(IEnumerable<string> symbols, KlineInterval klineInterval, DateTime? startTime = null, DateTime? endTime = null, int limit = 10)
         {
-            return await _binanceInteraction.GetKlinesAsync(symbols, klineInterval, startTime, endTime, limit: limit);
+            return await _binanceInteraction.GetLstKlinesAsync(symbols, klineInterval, startTime, endTime, limit: limit);
         } 
         
         public async Task<string> EntryMarket(string symbol, decimal price, decimal balanceUSDT, TypePosition typePosition)
