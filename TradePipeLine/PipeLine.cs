@@ -133,15 +133,23 @@ namespace TradePipeLine
 
             var currentPosition = new TransformBlock<string, BinancePositionDetailsUsdt>(async symbol =>
             {
-                var resultPosition = await _trade.GetCurrentOpenPositionAsync(symbol);
-                if (resultPosition != null)
+                try
                 {
-                    Console.WriteLine($"User: {_user.Name} -- Получили позицию по монете {symbol}");
-                    return resultPosition;
+                    var resultPosition = await _trade.GetCurrentOpenPositionAsync(symbol);
+                    if (resultPosition != null)
+                    {
+                        Console.WriteLine($"User: {_user.Name} -- Получили позицию по монете {symbol}");
+                        return resultPosition;
+                    }
+                    else
+                    {
+                        await _bufferFailedPosition.SendAsync(symbol);
+                        return null;
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    await _bufferFailedPosition.SendAsync(symbol);
+                    Console.WriteLine($"User: {_user.Name} -- Ошибка в блоке currentPosition, {ex.Message}");
                     return null;
                 }
 
@@ -259,7 +267,7 @@ namespace TradePipeLine
                 {
                     if (await _bufferWriteTradeHistoryToDB.SendAsync(historyTrades))
                     {
-                        Console.WriteLine($"User: {_user.Name} -- передали историю ордеров по валюте {historyTrades.First().Symbol}");
+                        Console.WriteLine($"User: {_user.Name} -- передали историю ордеров по валюте {_.Symbol}");
                     }
                 }
 
@@ -314,7 +322,7 @@ namespace TradePipeLine
 
                         Console.WriteLine($"User: {_user.Name}\n" +
                             $"Стратегия: {_nameStrategy}\n" +
-                            $"Ждем завершение свечи {kline.Symbol}!");
+                            $"Ждем завершение свечи {symbol}!");
 
                         await Task.Delay(Math.Abs((int)waitTime.TotalMilliseconds));
 
@@ -380,7 +388,7 @@ namespace TradePipeLine
                         IEnumerable<BinanceFuturesPlacedOrder> placedOrders = await _trade.PlaceOrders(gridOrders);
                         if (placedOrders.Any())
                         {
-                            Console.WriteLine($"User: {_user.Name} -- Валюта: {placedOrders.First().Symbol} -- Поставили failed orders");
+                            Console.WriteLine($"User: {_user.Name} -- Валюта: {gridOrders.ClosePositionOrders.First().Symbol} -- Поставили failed orders");
 
                             return placedOrders;
                         }
