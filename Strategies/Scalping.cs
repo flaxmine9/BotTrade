@@ -39,7 +39,7 @@ namespace Strategies
                 "SKLUSDT", "ALICEUSDT", "REEFUSDT",
                 "DODOUSDT", "DENTUSDT", 
                 "CVCUSDT", "OGNUSDT", "DOTUSDT", 
-                "ONEUSDT", "IOTXUSDT"
+                "ONEUSDT", "OCEANUSDT"
             };
         }
 
