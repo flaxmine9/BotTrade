@@ -17,12 +17,12 @@ namespace FlaxTrade
 
         private string NameUser { get; set; }
 
-        public Client(string nameUser, NetBinance typeNetBinance, ApiSetting apiSetting, ApplicationContext dataBase)
+        public Client(string nameUser, NetBinance typeNetBinance, ApiSetting apiSetting)
         {
             NameUser = nameUser;
             _apiSetting = apiSetting;
 
-            _dataBase = dataBase;
+            _dataBase = new ApplicationContext();
 
             _strategies = new();
 
@@ -45,7 +45,7 @@ namespace FlaxTrade
 
             foreach (IStrategy strategy in _strategies)
             {
-                new Task(() => strategy.Start(NameUser, _apiSetting.Key, _apiSetting.SecretKey, _dataBase, _typeNetBinance.Equals(NetBinance.BinanceMain) ? "MainNet" : "TestNet")).Start();
+                new Task(() => strategy.Start(NameUser, _apiSetting.Key, _apiSetting.SecretKey, new ApplicationContext(), _typeNetBinance.Equals(NetBinance.BinanceMain) ? "MainNet" : "TestNet")).Start();
             }
         }
     }
