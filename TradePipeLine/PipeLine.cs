@@ -94,14 +94,10 @@ namespace TradePipeLine
 
         public bool CheckFreePositions()
         {
-            bool check = true;
-
             lock (locker)
             {
-                check = _runningPositions.Count < _tradeSetting.MaxPositions;
+                return _runningPositions.Count < _tradeSetting.MaxPositions;
             }
-
-            return check;
         }
 
         public void Create()
@@ -492,18 +488,22 @@ namespace TradePipeLine
 
         private void DeletePosition(string symbol)
         {
+            int index = -1;
+            string message = string.Empty;
+
             lock (locker)
             {
-                int index = _runningPositions.FindIndex(0, _runningPositions.Count, x => x.Symbol.Equals(symbol));
+                index = _runningPositions.FindIndex(0, _runningPositions.Count, x => x.Symbol.Equals(symbol));
                 if (index != -1)
                 {
                     _runningPositions.RemoveAt(index);
 
-                    Console.WriteLine($"Валюта: {symbol} -- Удалили выполненную позицию из спиcка\n" +
+                    message = $"Валюта: {symbol} -- Удалили выполненную позицию из спиcка\n" +
                         $"Осталось активных позииций {_user.Name}: {_runningPositions.Count}\n" +
-                        $"Время: {DateTime.Now.ToUniversalTime()}");
+                        $"Время: {DateTime.Now.ToUniversalTime()}";
                 }
             }
+            Console.WriteLine(message);
         }
     }
 }
