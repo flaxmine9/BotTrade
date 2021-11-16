@@ -36,10 +36,7 @@ namespace Strategies
 
             _symbols = new List<string>() 
             { 
-                "SKLUSDT", "ALICEUSDT", "REEFUSDT",
-                "DODOUSDT", "DENTUSDT", 
-                "CVCUSDT", "OGNUSDT", "DOTUSDT", 
-                "ONEUSDT", "OCEANUSDT"
+                "IOTXUSDT"
             };
         }
 
@@ -72,6 +69,8 @@ namespace Strategies
                                 {
                                     foreach (TradeSignal signal in signals)
                                     {
+                                        Console.WriteLine($"Время закрытия свечи: {signal.CloseTime}");
+
                                         if (balanceUSDT >= _tradeSetting.BalanceUSDT)
                                         {
                                             if (pipeLine.CheckFreePositions())
@@ -130,6 +129,7 @@ namespace Strategies
                     {
                         Price = lstKlines.Last().Close,
                         Symbol = lstKlines.Last().Symbol,
+                        CloseTime = lstKlines.Last().CloseTime,
                         TypePosition = TypePosition.Long
                     });
                 }
@@ -139,6 +139,7 @@ namespace Strategies
                     {
                         Price = lstKlines.Last().Close,
                         Symbol = lstKlines.Last().Symbol,
+                        CloseTime = lstKlines.Last().CloseTime,
                         TypePosition = TypePosition.Short
                     });
                 }
