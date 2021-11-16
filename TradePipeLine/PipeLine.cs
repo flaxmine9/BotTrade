@@ -72,8 +72,8 @@ namespace TradePipeLine
                     {
                         _runningPositions.Add(tradeSignal);
 
-                        Console.WriteLine($"User: { _user.Name } -- добавили позицию { tradeSignal.Symbol } в список -- { DateTime.Now.ToUniversalTime() }");
-                        Console.WriteLine($"User: { _user.Name } -- Количество активных позиций: {_runningPositions.Count}");
+                        Console.WriteLine($"User: { _user.Name } -- добавили позицию { tradeSignal.Symbol } в список -- { DateTime.Now.ToUniversalTime() }\n" +
+                            $"User: { _user.Name } -- Количество активных позиций: {_runningPositions.Count}");
                     }
                 }
             }
@@ -318,7 +318,7 @@ namespace TradePipeLine
                     if(kline!= null)
                     {
                         DateTime timeNow = DateTime.Now.ToUniversalTime();
-                        TimeSpan waitTime = kline.CloseTime.AddMilliseconds(1050) - timeNow;
+                        TimeSpan waitTime = kline.CloseTime.AddMilliseconds(2000) - timeNow;
 
                         Console.WriteLine($"User: {_user.Name}\n" +
                             $"Стратегия: {_nameStrategy}\n" +
