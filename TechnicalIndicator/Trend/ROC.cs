@@ -7,7 +7,7 @@ namespace TechnicalIndicator.Trend
 {
     public class ROC
     {
-        public IEnumerable<RocResult> GetRoc(IEnumerable<Kline> klines, int period)
+        public IEnumerable<RocResult> GetRoc(IEnumerable<Kline> klines, int period, int? smaPeriod = null)
         {
             IEnumerable<Quote> quotes = klines.Select(x => new Quote()
             {
@@ -19,7 +19,7 @@ namespace TechnicalIndicator.Trend
                 Volume = x.QuoteVolume
             });
 
-            return quotes.GetRoc(period);
+            return quotes.GetRoc(period, smaPeriod);
         }
     }
 }
