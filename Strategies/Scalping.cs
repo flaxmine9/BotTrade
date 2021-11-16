@@ -88,7 +88,7 @@ namespace Strategies
                             }
                         }
                     }
-                    await Task.Delay(50);
+                    await Task.Delay(150);
                 }
                 catch (Exception ex)
                 {
@@ -122,11 +122,6 @@ namespace Strategies
             List<TradeSignal> signals = new();
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
-                if (lstKlines.First().Symbol.Equals("RAYUSDT"))
-                {
-                    continue;
-                }
-
                 List<RocResult> roc = _roc.GetRoc(lstKlines, 1).ToList();
 
                 if (roc.Last().Roc.Value >= 2.0m)
