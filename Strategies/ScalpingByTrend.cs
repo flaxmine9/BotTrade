@@ -53,10 +53,10 @@ namespace Strategies
             _data = new List<ScalpingByTrendData>()
             {
                 new ScalpingByTrendData() { Symbol = "ETHUSDT", SMAFastPeriod = 20, SMASlowPeriod = 60, LinearRegressionPeriod = 10, LinearRegressionSlopeValue = 7, RocPeriod = 30, RocSmoothPeriod = 2, RocValue = 0.7m, SuperTrendPeriod = 50, SuperTrendMultiplier = 4.5m },
-                //new ScalpingByTrendData() { Symbol = "BNBUSDT", SMAFastPeriod = 25, SMASlowPeriod = 55, LinearRegressionPeriod = 20, LinearRegressionSlopeValue = 4, RocPeriod = 10, RocSmoothPeriod = 5, RocValue = 0.6m, SuperTrendPeriod = 50, SuperTrendMultiplier = 5 },
-                //new ScalpingByTrendData() { Symbol = "LINKUSDT", SMAFastPeriod = 20, SMASlowPeriod = 50, LinearRegressionPeriod = 15, LinearRegressionSlopeValue = 1, RocPeriod = 30, RocSmoothPeriod = 2, RocValue = 2.5m, SuperTrendPeriod = 40, SuperTrendMultiplier = 6 },
-                //new ScalpingByTrendData() { Symbol = "LTCUSDT", SMAFastPeriod = 30, SMASlowPeriod = 60, LinearRegressionPeriod = 10, LinearRegressionSlopeValue = 14, RocPeriod = 10, RocSmoothPeriod = 3, RocValue = 1.3m, SuperTrendPeriod = 30, SuperTrendMultiplier = 4.5m },
-                //new ScalpingByTrendData() { Symbol = "XRPUSDT", SMAFastPeriod = 25, SMASlowPeriod = 55, LinearRegressionPeriod = 20, LinearRegressionSlopeValue = 6, RocPeriod = 40, RocSmoothPeriod = 5, RocValue = 0.7m, SuperTrendPeriod = 10, SuperTrendMultiplier = 6 }
+                new ScalpingByTrendData() { Symbol = "BNBUSDT", SMAFastPeriod = 25, SMASlowPeriod = 55, LinearRegressionPeriod = 20, LinearRegressionSlopeValue = 4, RocPeriod = 10, RocSmoothPeriod = 5, RocValue = 0.6m, SuperTrendPeriod = 50, SuperTrendMultiplier = 5 },
+                new ScalpingByTrendData() { Symbol = "LINKUSDT", SMAFastPeriod = 20, SMASlowPeriod = 50, LinearRegressionPeriod = 15, LinearRegressionSlopeValue = 1, RocPeriod = 30, RocSmoothPeriod = 2, RocValue = 2.5m, SuperTrendPeriod = 40, SuperTrendMultiplier = 6 },
+                new ScalpingByTrendData() { Symbol = "LTCUSDT", SMAFastPeriod = 30, SMASlowPeriod = 60, LinearRegressionPeriod = 10, LinearRegressionSlopeValue = 14, RocPeriod = 10, RocSmoothPeriod = 3, RocValue = 1.3m, SuperTrendPeriod = 30, SuperTrendMultiplier = 4.5m },
+                new ScalpingByTrendData() { Symbol = "XRPUSDT", SMAFastPeriod = 25, SMASlowPeriod = 55, LinearRegressionPeriod = 20, LinearRegressionSlopeValue = 6, RocPeriod = 40, RocSmoothPeriod = 5, RocValue = 0.7m, SuperTrendPeriod = 10, SuperTrendMultiplier = 6 }
             };
         }
 
