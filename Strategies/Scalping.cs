@@ -36,7 +36,7 @@ namespace Strategies
 
             _symbols = new List<string>() 
             { 
-                "IOTXUSDT"
+                "IOTXUSDT", "ARPAUSDT", "DYDXUSDT"
             };
         }
 
