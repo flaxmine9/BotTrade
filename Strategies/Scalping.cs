@@ -56,7 +56,7 @@ namespace Strategies
                     {
                         var symbolsWithOutRunning = _symbols.Except(pipeLine.GetRunningPositions());
 
-                        var klines = await _trade.GetLstKlinesAsync(symbolsWithOutRunning, (KlineInterval)_tradeSetting.TimeFrame, limit: 2);
+                        var klines = await _trade.GetLstKlinesAsync(symbolsWithOutRunning, (KlineInterval)_tradeSetting.TimeFrame, limit: 1);
                        
                         if (klines.Any())
                         {
@@ -87,7 +87,7 @@ namespace Strategies
                             }
                         }
                     }
-                    await Task.Delay(150);
+                    await Task.Delay(200);
                 }
                 catch (Exception ex)
                 {
@@ -121,9 +121,7 @@ namespace Strategies
             List<TradeSignal> signals = new();
             foreach (IEnumerable<Kline> lstKlines in klines)
             {
-                List<RocResult> roc = _roc.GetRoc(lstKlines, 1).ToList();
-
-                if (roc.Last().Roc.Value >= 2.0m)
+                if (lstKlines.Last().Close / lstKlines.Last().Open >= 1.025m)
                 {
                     signals.Add(new TradeSignal()
                     {
@@ -133,7 +131,7 @@ namespace Strategies
                         TypePosition = TypePosition.Long
                     });
                 }
-                else if (roc.Last().Roc.Value <= -2.0m)
+                else if (lstKlines.Last().Open / lstKlines.Last().Close >= 1.025m)
                 {
                     signals.Add(new TradeSignal()
                     {
