@@ -314,11 +314,11 @@ namespace TradePipeLine
                     if(kline!= null)
                     {
                         DateTime timeNow = DateTime.Now.ToUniversalTime();
-                        TimeSpan waitTime = kline.CloseTime.AddMilliseconds(2000) - timeNow;
+                        TimeSpan waitTime = kline.CloseTime.AddMilliseconds(3000) - timeNow;
 
                         Console.WriteLine($"User: {_user.Name}\n" +
                             $"Стратегия: {_nameStrategy}\n" +
-                            $"Ждем завершение свечи {symbol}!");
+                            $"Ждем завершение свечи {symbol}: {waitTime}");
 
                         await Task.Delay(Math.Abs((int)waitTime.TotalMilliseconds));
 
