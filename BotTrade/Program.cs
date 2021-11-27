@@ -20,6 +20,11 @@ namespace FlaxTrade
                     new TradeSetting(TimeFrame.FiveMinutes, takeProfit: 1.03m, stopLoss: 1.006m, leverage: 5, futuresMarginType: "Isolated",
                         maxOrders: 10, balanceUSDT: 10.5m, maxPositions: 1)
                 ));
+            clientFlax.AddStrategy(new Scalping
+                (
+                    new TradeSetting(TimeFrame.FiveMinutes, takeProfit: 1.02m, stopLoss: 1.01m, leverage: 5, futuresMarginType: "Isolated",
+                        maxOrders: 10, balanceUSDT: 10.5m, maxPositions: 2)
+                ));
 
             clientFlax.StartStrategies();
 
